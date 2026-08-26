@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { db } from '../../../lib/db';
 
 // جلب جميع التصنيفات
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
         metaDesc,
       },
     });
+
+    // تفريغ وتحديث الكاش للمسارات المتأثرة بالتصنيف الجديد
+    revalidatePath('/');
+    revalidatePath(`/category/${category.slug}`);
+    revalidatePath('/category-sitemap.xml');
+    revalidatePath('/sitemap.xml');
 
     return NextResponse.json(category, { status: 201 });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { db } from '../../../lib/db';
 
 export async function POST(request: NextRequest) {
@@ -92,6 +93,13 @@ export async function POST(request: NextRequest) {
         authorId,
       },
     });
+
+    // تفريغ وتحديث الكاش فورياً للمقال والقسم والصفحة الرئيسية والخرائط
+    revalidatePath('/');
+    revalidatePath(`/${article.slug}`);
+    revalidatePath(`/category/${categorySlug}`);
+    revalidatePath('/post-sitemap.xml');
+    revalidatePath('/sitemap.xml');
 
     return NextResponse.json(
       {

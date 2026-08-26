@@ -52,6 +52,8 @@ export default async function EditAdminPage({ params }: EditPageAdminProps) {
         };
       }
 
+      const oldSlug = page?.slug;
+
       await db.page.update({
         where: { id },
         data: {
@@ -66,9 +68,17 @@ export default async function EditAdminPage({ params }: EditPageAdminProps) {
         },
       });
 
+      // تفريغ وتحديث الكاش للمسار القديم والجديد والـ Layout والسايت ماب
       revalidatePath('/');
+      revalidatePath('/', 'layout');
+      if (oldSlug && oldSlug !== slug) {
+        revalidatePath(`/${oldSlug}`);
+      }
       revalidatePath(`/${slug}`);
+      revalidatePath('/page-sitemap.xml');
+      revalidatePath('/sitemap.xml');
       revalidatePath('/admin/pages');
+
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل تحديث بيانات الصفحة' };

@@ -14,9 +14,19 @@ export default async function AdminPagesList() {
     const id = formData.get('id') as string;
     if (!id) return;
 
+    const targetPage = await db.page.findUnique({
+      where: { id },
+    });
+
     await db.page.delete({ where: { id } });
+
     revalidatePath('/admin/pages');
-    revalidatePath('/');
+    revalidatePath('/', 'layout');
+    if (targetPage) {
+      revalidatePath(`/${targetPage.slug}`);
+    }
+    revalidatePath('/page-sitemap.xml');
+    revalidatePath('/sitemap.xml');
   }
 
   return (

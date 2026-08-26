@@ -30,7 +30,7 @@ export default function NewAdminPage() {
         return { success: false, error: 'هذا الرابط الدائم (Slug) مستخدم لصفحة أخرى مسبقاً، يرجى اختيار رابط آخر' };
       }
 
-      await db.page.create({
+      const created = await db.page.create({
         data: {
           title,
           slug,
@@ -43,8 +43,14 @@ export default function NewAdminPage() {
         },
       });
 
+      // تفريغ وتحديث الكاش فورياً للصفحة الجديدة، الروابط في الهيدر والفوتر، والسايت ماب
       revalidatePath('/');
+      revalidatePath('/', 'layout');
+      revalidatePath(`/${created.slug}`);
+      revalidatePath('/page-sitemap.xml');
+      revalidatePath('/sitemap.xml');
       revalidatePath('/admin/pages');
+
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل حفظ الصفحة في قاعدة البيانات' };
