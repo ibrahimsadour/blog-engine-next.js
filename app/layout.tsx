@@ -6,6 +6,8 @@ import AdminBar from '@/components/AdminBar';
 import { db } from '@/lib/db';
 import { Toaster } from 'sonner';
 
+export const dynamic = 'force-dynamic';
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 export const viewport: Viewport = {
@@ -27,7 +29,6 @@ export const metadata: Metadata = {
   generator: 'Next.js',
   referrer: 'origin-when-cross-origin',
   
-  // توجيهات عناكب البحث المتقدمة
   robots: {
     index: true,
     follow: true,
@@ -40,7 +41,6 @@ export const metadata: Metadata = {
     },
   },
 
-  // Open Graph الأساسي للموقع
   openGraph: {
     type: 'website',
     locale: 'ar_KW',
@@ -50,14 +50,12 @@ export const metadata: Metadata = {
     description: 'دليل خدمات متكامل لصيانة وتبديل البطاريات وخدمات المساعدة على الطريق في الكويت 24 ساعة',
   },
 
-  // بطاقات تويتر
   twitter: {
     card: 'summary_large_image',
     title: 'دليل الخدمات السريعة في الكويت',
     description: 'دليل خدمات متكامل لصيانة وتبديل البطاريات وخدمات المساعدة على الطريق في الكويت 24 ساعة',
   },
 
-  // تحسين التنسيقات للأجهزة الذكية
   formatDetection: {
     email: false,
     address: true,
