@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Author {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  role        String?
+  bio         String?   @db.Text
+  avatar      String?
+  socialLinks Json?
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?   @db.Text
+  metaTitle   String?
+  metaDesc    String?
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Article {
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  content        String    @db.Text
+  excerpt        String?   @db.Text
+  featuredImage  String?
+  altText        String?
+
+  // Technical & Local SEO
+  metaTitle      String?
+  metaDesc       String?
+  canonicalUrl   String?
+  targetKeyword  String?
+  targetArea     String?
+  faqs           Json?
+  
+  // Robots Directives
+  noIndex        Boolean   @default(false)
+  noFollow       Boolean   @default(false)
+
+  // Status & Publishing
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+
+  // Relations
+  category       Category  @relation(fields: [categoryId], references: [id])
+  categoryId     String
+  
+  author         Author?   @relation(fields: [authorId], references: [id])
+  authorId       String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+model Page {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  content      String   @db.Text
+  
+  // SEO
+  metaTitle    String?
+  metaDesc     String?  @db.Text
+  
+  // Robots Directives
+  noIndex      Boolean  @default(false)
+  noFollow     Boolean  @default(false)
+
+  // Status & Visibility
+  isPublished  Boolean  @default(true)
+  showInHeader Boolean  @default(false)
+  showInFooter Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model Setting {
+  key       String   @id
+  value     String?  @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Redirect {
+  id         String   @id @default(cuid())
+  sourcePath String   @unique
+  targetPath String
+  statusCode Int      @default(301)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

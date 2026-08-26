@@ -1,0 +1,382 @@
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { db } from '@/lib/db';
+import {
+  generateArticleSchema,
+  generateFaqSchema,
+  generateBreadcrumbSchema,
+  generateLocalBusinessSchema,
+} from '@/lib/schema';
+import { injectInternalLinks, InternalLinkRule } from '@/lib/internal-links';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import TableOfContents from '@/components/TableOfContents';
+import FaqSection from '@/components/FaqSection';
+import CallToAction from '@/components/CallToAction';
+import RelatedArticles from '@/components/RelatedArticles';
+import StickyFloatingBar from '@/components/StickyFloatingBar';
+import { cookies } from 'next/headers';
+
+export const revalidate = 3600;
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const rawSlug = slug.trim();
+  const decodedSlug = decodeURIComponent(rawSlug).trim();
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+  // 1. فحص جدول المقالات
+  const article = await db.article.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+    },
+    include: { category: true },
+  });
+
+  if (article) {
+    const url = `${siteUrl}/${article.slug}`;
+    const ogImageUrl = article.featuredImage
+      ? article.featuredImage.startsWith('http')
+        ? article.featuredImage
+        : `${siteUrl}${article.featuredImage}`
+      : undefined;
+
+    const keywordsValue =
+      article.targetKeyword && article.targetKeyword.trim() ? article.targetKeyword.trim() : article.title;
+
+    return {
+      title: article.metaTitle || article.title,
+      description: article.metaDesc || article.excerpt || undefined,
+      keywords: keywordsValue,
+      alternates: {
+        canonical: article.canonicalUrl || url,
+      },
+      robots: {
+        index: !article.noIndex,
+        follow: !article.noFollow,
+        googleBot: {
+          index: !article.noIndex,
+          follow: !article.noFollow,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      openGraph: {
+        title: article.metaTitle || article.title,
+        description: article.metaDesc || article.excerpt || undefined,
+        url,
+        type: 'article',
+        locale: 'ar_KW',
+        publishedTime: article.createdAt.toISOString(),
+        modifiedTime: article.updatedAt.toISOString(),
+        section: article.category?.name || 'خدمات',
+        images: ogImageUrl ? [{ url: ogImageUrl }] : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: article.metaTitle || article.title,
+        description: article.metaDesc || article.excerpt || undefined,
+        images: ogImageUrl ? [ogImageUrl] : [],
+      },
+    };
+  }
+
+  // 2. فحص جدول الصفحات الثابتة
+  const page = await db.page.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+    },
+  });
+
+  if (page && page.isPublished) {
+    return {
+      title: page.metaTitle || page.title,
+      description: page.metaDesc || undefined,
+      alternates: {
+        canonical: `${siteUrl}/${page.slug}`,
+      },
+      robots: {
+        index: !page.noIndex,
+        follow: !page.noFollow,
+      },
+    };
+  }
+
+  return {
+    title: 'الصفحة غير موجودة',
+  };
+}
+
+export default async function DynamicSlugPage({ params }: PageProps) {
+  const { slug } = await params;
+  const rawSlug = slug.trim();
+  const decodedSlug = decodeURIComponent(rawSlug).trim();
+
+  const cookieStore = await cookies();
+  const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
+
+  // 1. البحث أولاً في المقالات
+  const article = await db.article.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      ...(isAdmin ? {} : { isPublished: true }),
+    },
+    include: { category: true, author: true },
+  });
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+  // إذا تم العثور على مقال: يتم عرض قالب المقال
+  if (article) {
+    const otherArticles = await db.article.findMany({
+      where: {
+        id: { not: article.id },
+        isPublished: true,
+        noIndex: false,
+      },
+      select: {
+        title: true,
+        slug: true,
+        targetKeyword: true,
+      },
+      take: 50,
+    });
+
+    const internalLinkRules: InternalLinkRule[] = [];
+    otherArticles.forEach((item) => {
+      if (item.targetKeyword && item.targetKeyword.trim()) {
+        internalLinkRules.push({
+          keyword: item.targetKeyword.trim(),
+          url: `/${item.slug}`,
+          maxReplacements: 1,
+        });
+      } else if (item.title && item.title.trim()) {
+        internalLinkRules.push({
+          keyword: item.title.trim(),
+          url: `/${item.slug}`,
+          maxReplacements: 1,
+        });
+      }
+    });
+
+    const relatedArticles = await db.article.findMany({
+      where: {
+        id: { not: article.id },
+        isPublished: true,
+        noIndex: false,
+        OR: [
+          { categoryId: article.categoryId },
+          ...(article.targetArea ? [{ targetArea: article.targetArea }] : []),
+        ],
+      },
+      include: { category: true },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+    });
+
+    const pageUrl = `${siteUrl}/${article.slug}`;
+
+    const articleSchema = generateArticleSchema(
+      {
+        title: article.title,
+        excerpt: article.excerpt,
+        metaDescription: article.metaDesc,
+        featuredImage: article.featuredImage,
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+        author: article.author ? { name: article.author.name } : null,
+      },
+      pageUrl
+    );
+
+    const localBusinessSchema = generateLocalBusinessSchema({
+      name: article.title,
+      description: article.metaDesc || article.excerpt || undefined,
+      areaServed: article.targetArea || 'الكويت',
+      url: pageUrl,
+    });
+
+    const breadcrumbItems = [
+      ...(article.category ? [{ name: article.category.name, url: `/category/${article.category.slug}` }] : []),
+      { name: article.title, url: `/${article.slug}` },
+    ];
+    const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
+    const faqs = (article.faqs as unknown as Array<{ question: string; answer: string }>) || [];
+    const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
+
+    const headingRegex = /<h([2-3])[^>]*>(.*?)<\/h\1>/gi;
+    const headings: { id: string; text: string; level: number }[] = [];
+    let match;
+    while ((match = headingRegex.exec(article.content)) !== null) {
+      const text = match[2].replace(/<[^>]*>/g, '');
+      const id = text.trim().replace(/\s+/g, '-').toLowerCase();
+      headings.push({
+        id,
+        text,
+        level: parseInt(match[1], 10),
+      });
+    }
+
+    const processedContent = injectInternalLinks(article.content, internalLinkRules, `/${article.slug}`);
+
+    return (
+      <>
+        {!article.noIndex && (
+          <>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+            />
+            {faqSchema && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+              />
+            )}
+          </>
+        )}
+
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+          <article className="relative mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-sm md:p-10">
+            {isAdmin && (!article.isPublished || article.noIndex || article.noFollow) && (
+              <div className="mb-6 flex flex-wrap gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  تنبيهات المسؤول:
+                </span>
+                {!article.isPublished && (
+                  <span className="rounded bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-700">هذا المقال (مسودة) وغير ظاهر للزوار</span>
+                )}
+                {article.noIndex && (
+                  <span className="rounded bg-orange-100 px-2.5 py-0.5 text-[11px] font-bold text-orange-700">noindex (غير مفهرس)</span>
+                )}
+                {article.noFollow && (
+                  <span className="rounded bg-orange-100 px-2.5 py-0.5 text-[11px] font-bold text-orange-700">nofollow</span>
+                )}
+              </div>
+            )}
+
+            <Breadcrumbs items={breadcrumbItems} />
+
+            <header className="my-6 border-b border-gray-100 pb-6">
+              <h1 className="text-2xl font-extrabold text-gray-900 md:text-4xl md:leading-tight">
+                {article.title}
+              </h1>
+
+              <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                {article.author && <span>الكاتب: {article.author.name}</span>}
+                {article.category && (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    {article.category.name}
+                  </span>
+                )}
+                <time dateTime={article.createdAt.toISOString()}>
+                  {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </time>
+              </div>
+            </header>
+
+            {article.featuredImage && (
+              <div className="relative mb-8 h-72 w-full overflow-hidden rounded-xl md:h-96">
+                <Image
+                  src={article.featuredImage}
+                  alt={article.altText || article.title}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            {headings.length > 0 && <TableOfContents headings={headings} />}
+
+            <div
+              className="prose prose-lg max-w-none leading-relaxed text-gray-800"
+              dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+
+            <CallToAction />
+
+            {faqs.length > 0 && <FaqSection faqs={faqs} />}
+
+            {relatedArticles.length > 0 && (
+              <RelatedArticles articles={relatedArticles} />
+            )}
+          </article>
+        </main>
+        <StickyFloatingBar />
+      </>
+    );
+  }
+
+  // 2. إذا لم يكن مقالاً، نبحث في الصفحات الثابتة (Pages)
+  const page = await db.page.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      ...(isAdmin ? {} : { isPublished: true }),
+    },
+  });
+
+  if (page) {
+    const breadcrumbs = [
+      { name: 'الرئيسية', url: '/' },
+      { name: page.title, url: `/${page.slug}` },
+    ];
+
+    return (
+      <>
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+          <article className="mx-auto max-w-4xl rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-10">
+            <Breadcrumbs items={breadcrumbs} />
+
+            <header className="my-6 border-b border-gray-100 pb-6">
+              <h1 className="text-2xl font-black text-gray-900 md:text-4xl md:leading-tight">
+                {page.title}
+              </h1>
+              <div className="mt-3 flex items-center gap-2 text-xs font-medium text-gray-400">
+                <span>آخر تحديث:</span>
+                <time dateTime={page.updatedAt.toISOString()}>
+                  {new Date(page.updatedAt).toLocaleDateString('ar-EG', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </time>
+              </div>
+            </header>
+
+            <div
+              className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
+              dangerouslySetInnerHTML={{ __html: page.content }}
+            />
+          </article>
+        </main>
+        <StickyFloatingBar />
+      </>
+    );
+  }
+
+  // 3. إذا لم يوجد في المقالات ولا في الصفحات
+  notFound();
+}
