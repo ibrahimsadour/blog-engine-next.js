@@ -23,13 +23,58 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+// دالة لتنظيف وتوليد معرف slug متطابق مع الأحرف العربية والإنجليزية
+function slugifyHeading(text: string): string {
+  return text
+    .toString()
+    .trim()
+    .replace(/<[^>]*>/g, '')
+    .replace(/[^\w\u0600-\u06FF\- ]+/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+// دالة لحقن الـ ID داخل وسوم H2 و H3 في المقال واستخراج قائمة العناوين لجدول المحتويات
+function injectHeadingIds(html: string): {
+  htmlWithIds: string;
+  headings: { id: string; text: string; level: number }[];
+} {
+  const headings: { id: string; text: string; level: number }[] = [];
+
+  const htmlWithIds = html.replace(
+    /<h([2-3])([^>]*)>(.*?)<\/h\1>/gi,
+    (match, level, attrs, innerHtml) => {
+      const cleanText = innerHtml.replace(/<[^>]*>/g, '').trim();
+      if (!cleanText) return match;
+
+      const existingIdMatch = attrs.match(/id=["']([^"']+)["']/i);
+      const id = existingIdMatch ? existingIdMatch[1] : slugifyHeading(cleanText);
+
+      headings.push({
+        id,
+        text: cleanText,
+        level: parseInt(level, 10),
+      });
+
+      if (existingIdMatch) {
+        return match;
+      }
+
+      return `<h${level}${attrs} id="${id}">${innerHtml}</h${level}>`;
+    }
+  );
+
+  return { htmlWithIds, headings };
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
-  // 1. فحص جدول المقالات
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -86,7 +131,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  // 2. فحص جدول الصفحات الثابتة
   const page = await db.page.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -120,7 +164,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const cookieStore = await cookies();
   const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
 
-  // 1. البحث أولاً في المقالات
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -131,7 +174,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
-  // إذا تم العثور على مقال: يتم عرض قالب المقال
   if (article) {
     const otherArticles = await db.article.findMany({
       where: {
@@ -210,20 +252,11 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     const faqs = (article.faqs as unknown as Array<{ question: string; answer: string }>) || [];
     const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
 
-    const headingRegex = /<h([2-3])[^>]*>(.*?)<\/h\1>/gi;
-    const headings: { id: string; text: string; level: number }[] = [];
-    let match;
-    while ((match = headingRegex.exec(article.content)) !== null) {
-      const text = match[2].replace(/<[^>]*>/g, '');
-      const id = text.trim().replace(/\s+/g, '-').toLowerCase();
-      headings.push({
-        id,
-        text,
-        level: parseInt(match[1], 10),
-      });
-    }
+    // 1. حقن الـ ID في وسوم H2 و H3 داخل محتوى المقال
+    const { htmlWithIds, headings } = injectHeadingIds(article.content);
 
-    const processedContent = injectInternalLinks(article.content, internalLinkRules, `/${article.slug}`);
+    // 2. حقن الروابط الداخلية
+    const processedContent = injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`);
 
     return (
       <>
@@ -309,10 +342,12 @@ export default async function DynamicSlugPage({ params }: PageProps) {
               </div>
             )}
 
+            {/* جدول المحتويات */}
             {headings.length > 0 && <TableOfContents headings={headings} />}
 
+            {/* محتوى المقال مع إضافة scroll-mt-24 لتفادي حجب العنوان تحت الهيدر */}
             <div
-              className="prose prose-lg max-w-none leading-relaxed text-gray-800"
+              className="prose prose-lg max-w-none leading-relaxed text-gray-800 prose-headings:scroll-mt-24 prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl"
               dangerouslySetInnerHTML={{ __html: processedContent }}
             />
 
@@ -330,7 +365,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     );
   }
 
-  // 2. إذا لم يكن مقالاً، نبحث في الصفحات الثابتة (Pages)
   const page = await db.page.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -377,6 +411,5 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     );
   }
 
-  // 3. إذا لم يوجد في المقالات ولا في الصفحات
   notFound();
 }
