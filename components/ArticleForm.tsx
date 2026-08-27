@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
+import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
   ssr: false,
@@ -48,11 +49,23 @@ interface ArticleFormProps {
 
 export default function ArticleForm({ categories, action, initialData }: ArticleFormProps) {
   const router = useRouter();
+
+  // مفتاح التخزين الفريد للمسودة (يختلف للمقال الجديد عن تعديل مقال قائم)
+  const storageKey = initialData?.id
+    ? `draft_article_${initialData.id}`
+    : 'draft_article_new';
+
   const [title, setTitle] = useState(initialData?.title || '');
   const [slug, setSlug] = useState(initialData?.slug || '');
   const [targetKeyword, setTargetKeyword] = useState(initialData?.targetKeyword || '');
+  const [targetArea, setTargetArea] = useState(initialData?.targetArea || 'الكويت');
+  const [categorySlug, setCategorySlug] = useState(initialData?.categorySlug || categories[0]?.slug || '');
+  const [excerpt, setExcerpt] = useState(initialData?.excerpt || '');
+  const [featuredImage, setFeaturedImage] = useState(initialData?.featuredImage || '');
+  const [altText, setAltText] = useState(initialData?.altText || '');
   const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || '');
   const [metaDesc, setMetaDesc] = useState(initialData?.metaDesc || '');
+  const [canonicalUrl, setCanonicalUrl] = useState(initialData?.canonicalUrl || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [isPublished, setIsPublished] = useState<boolean>(initialData?.isPublished ?? true);
   const [noIndex, setNoIndex] = useState<boolean>(initialData?.noIndex ?? false);
@@ -63,6 +76,131 @@ export default function ArticleForm({ categories, action, initialData }: Article
       ? initialData.faqs
       : [{ question: '', answer: '' }]
   );
+
+  // حالات المسودة والحفظ المحلي
+  const [hasDraft, setHasDraft] = useState(false);
+  const [isSavedLocally, setIsSavedLocally] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // 1. فحص وجود مسودة محفوظة محلياً عند تحميل الصفحة
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.title || parsed.content) {
+          setHasDraft(true);
+        }
+      }
+    } catch {
+      // تجاهل أخطاء التخزين
+    }
+  }, [storageKey]);
+
+  // 2. الحفظ التلقائي في LocalStorage عند إجراء أي تعديل
+  useEffect(() => {
+    if (!title && !content && !excerpt && !targetKeyword) return;
+
+    setIsDirty(true);
+    setIsSavedLocally(false);
+
+    const timer = setTimeout(() => {
+      const draftData = {
+        title,
+        slug,
+        targetKeyword,
+        targetArea,
+        categorySlug,
+        excerpt,
+        featuredImage,
+        altText,
+        metaTitle,
+        metaDesc,
+        canonicalUrl,
+        content,
+        isPublished,
+        noIndex,
+        noFollow,
+        faqs,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(storageKey, JSON.stringify(draftData));
+      setIsSavedLocally(true);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    title,
+    slug,
+    targetKeyword,
+    targetArea,
+    categorySlug,
+    excerpt,
+    featuredImage,
+    altText,
+    metaTitle,
+    metaDesc,
+    canonicalUrl,
+    content,
+    isPublished,
+    noIndex,
+    noFollow,
+    faqs,
+    storageKey,
+  ]);
+
+  // 3. منع إغلاق المتصفح أو الضغط على زر الرجوع عند وجود بيانات غير محفوظة
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // 4. استعادة بيانات المسودة المحفوظة
+  const handleRestoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.title !== undefined) setTitle(parsed.title);
+        if (parsed.slug !== undefined) setSlug(parsed.slug);
+        if (parsed.targetKeyword !== undefined) setTargetKeyword(parsed.targetKeyword);
+        if (parsed.targetArea !== undefined) setTargetArea(parsed.targetArea);
+        if (parsed.categorySlug !== undefined) setCategorySlug(parsed.categorySlug);
+        if (parsed.excerpt !== undefined) setExcerpt(parsed.excerpt);
+        if (parsed.featuredImage !== undefined) setFeaturedImage(parsed.featuredImage);
+        if (parsed.altText !== undefined) setAltText(parsed.altText);
+        if (parsed.metaTitle !== undefined) setMetaTitle(parsed.metaTitle);
+        if (parsed.metaDesc !== undefined) setMetaDesc(parsed.metaDesc);
+        if (parsed.canonicalUrl !== undefined) setCanonicalUrl(parsed.canonicalUrl);
+        if (parsed.content !== undefined) setContent(parsed.content);
+        if (parsed.isPublished !== undefined) setIsPublished(parsed.isPublished);
+        if (parsed.noIndex !== undefined) setNoIndex(parsed.noIndex);
+        if (parsed.noFollow !== undefined) setNoFollow(parsed.noFollow);
+        if (parsed.faqs !== undefined) setFaqs(parsed.faqs);
+
+        setHasDraft(false);
+        toast.success('تمت استعادة كافة البيانات المحفوظة بنجاح!');
+      }
+    } catch {
+      toast.error('تعذر استرجاع المسودة');
+    }
+  };
+
+  // 5. تجاهل وحذف المسودة
+  const handleDiscardDraft = () => {
+    if (window.confirm('هل تريد حذف المسودة المحفوظة تلقائياً؟')) {
+      localStorage.removeItem(storageKey);
+      setHasDraft(false);
+      toast.info('تم تجاهل المسودة');
+    }
+  };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = e.target.value
@@ -94,7 +232,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
     const formData = new FormData(formElement);
 
     const cleanSlug = slug.trim().replace(/^-+|-+$/g, '');
-    const categorySlug = (formData.get('categorySlug') as string) || '';
 
     if (!title.trim()) {
       toast.error('يرجى إدخال عنوان المقال الرئيسي (H1)');
@@ -121,8 +258,14 @@ export default function ArticleForm({ categories, action, initialData }: Article
     formData.set('title', title);
     formData.set('slug', cleanSlug);
     formData.set('targetKeyword', targetKeyword);
+    formData.set('targetArea', targetArea);
+    formData.set('categorySlug', categorySlug);
+    formData.set('excerpt', excerpt);
+    formData.set('featuredImage', featuredImage);
+    formData.set('altText', altText);
     formData.set('metaTitle', metaTitle);
     formData.set('metaDesc', metaDesc);
+    formData.set('canonicalUrl', canonicalUrl);
     formData.set('content', content);
     formData.set('faqs', JSON.stringify(validFaqs));
     formData.set('isPublished', isPublished ? 'true' : 'false');
@@ -136,6 +279,11 @@ export default function ArticleForm({ categories, action, initialData }: Article
 
     try {
       await action(formData);
+
+      // مسح المسودة المحلية بعد نجاح الحفظ في قاعدة البيانات
+      localStorage.removeItem(storageKey);
+      setIsDirty(false);
+
       toast.success(isPublished ? 'تم نشر المقال بنجاح!' : 'تم حفظ المقال كمسودة بنجاح!', {
         id: toastId,
       });
@@ -149,6 +297,49 @@ export default function ArticleForm({ categories, action, initialData }: Article
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* شريط استرجاع المسودة التلقائية عند الدخول */}
+      {hasDraft && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-900 sm:text-sm">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+            <span>يوجد نسخة محفوظة تلقائياً لهذا المقال من جلستك السابقة، هل ترغب باستعادتها؟</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>استعادة البيانات</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
+            >
+              تجاهل
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* مؤشر الحفظ التلقائي */}
+      <div className="flex justify-end">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+          {isSavedLocally ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-700 font-semibold">محفوظ تلقائياً في المتصفح</span>
+            </>
+          ) : isDirty ? (
+            <span className="text-amber-600">جاري حفظ المسودة...</span>
+          ) : (
+            <span>التغييرات محفوظة</span>
+          )}
+        </span>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-bold text-gray-700">عنوان المقال (H1)</label>
@@ -182,7 +373,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
           <select
             name="categorySlug"
             required
-            defaultValue={initialData?.categorySlug || categories[0]?.slug}
+            value={categorySlug}
+            onChange={(e) => setCategorySlug(e.target.value)}
             className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
           >
             {categories.map((c) => (
@@ -208,7 +400,9 @@ export default function ArticleForm({ categories, action, initialData }: Article
           <input
             type="text"
             name="targetArea"
-            defaultValue={initialData?.targetArea || 'الكويت'}
+            value={targetArea}
+            onChange={(e) => setTargetArea(e.target.value)}
+            placeholder="الكويت"
             className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
           />
         </div>
@@ -219,7 +413,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
         <textarea
           name="excerpt"
           rows={2}
-          defaultValue={initialData?.excerpt || ''}
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
           placeholder="مقدمة موجزة للمقال تظهر في نتائج البحث والبطاقات..."
           className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
         />
@@ -233,7 +428,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
           <div>
             <ImageUploader
               name="featuredImage"
-              initialImage={initialData?.featuredImage || ''}
+              initialImage={featuredImage}
+              onChange={(url) => setFeaturedImage(url)}
             />
           </div>
 
@@ -242,7 +438,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
             <input
               type="text"
               name="altText"
-              defaultValue={initialData?.altText || ''}
+              value={altText}
+              onChange={(e) => setAltText(e.target.value)}
               placeholder="مثال: ورشة تصليح وصيانة سيارات في الكويت"
               className="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm focus:border-blue-500 focus:outline-hidden"
             />
@@ -392,7 +589,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
         <input
           type="url"
           name="canonicalUrl"
-          defaultValue={initialData?.canonicalUrl || ''}
+          value={canonicalUrl}
+          onChange={(e) => setCanonicalUrl(e.target.value)}
           placeholder="اتركه فارغاً ليكون الرابط التلقائي للمقال"
           className="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-mono focus:border-blue-500 focus:outline-hidden"
         />

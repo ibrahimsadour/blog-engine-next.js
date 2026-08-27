@@ -83,21 +83,37 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { url } = await request.json();
-    
+    let targetUrl: string | null = null;
+
+    // استخراج الرابط سواء من الـ URL Query أو من JSON Body
+    const { searchParams } = new URL(request.url);
+    const queryUrl = searchParams.get('src') || searchParams.get('url');
+
+    if (queryUrl) {
+      targetUrl = queryUrl;
+    } else {
+      try {
+        const body = await request.json();
+        targetUrl = body.url || body.src;
+      } catch {
+        // Body فارغ
+      }
+    }
+
     // التحقق من صحة المسار ومنع Path Traversal
-    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/') || url.includes('..')) {
+    if (!targetUrl || typeof targetUrl !== 'string' || !targetUrl.startsWith('/uploads/') || targetUrl.includes('..')) {
       return NextResponse.json({ error: 'مسار غير صالح' }, { status: 400 });
     }
 
-    const safePath = path.normalize(url).replace(/^(\.\.[\/\\])+/, '');
+    const safePath = path.normalize(targetUrl).replace(/^(\.\.[\/\\])+/, '');
     const filePath = path.join(process.cwd(), 'public', safePath);
 
     if (existsSync(filePath)) {
       await unlink(filePath);
+      return NextResponse.json({ success: true, message: 'تم حذف الصورة بنجاح من السيرفر' });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: 'الملف غير موجود على السيرفر' }, { status: 404 });
   } catch (error) {
     console.error('Delete Error:', error);
     return NextResponse.json({ error: 'فشل في حذف الصورة' }, { status: 500 });
