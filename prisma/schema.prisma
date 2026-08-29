@@ -118,6 +118,7 @@ model City {
   id           String               @id @default(cuid())
   name         String
   slug         String               @unique
+  image        String?
   description  String?
   keywords     String?
   metaTitle    String?
@@ -133,6 +134,7 @@ model Service {
   id              String               @id @default(cuid())
   name            String
   slug            String               @unique
+  image        String?
   description     String?
   keywords        String?
   metaTitle       String?
