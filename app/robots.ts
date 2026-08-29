@@ -17,7 +17,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     // في حال عدم توفر قاعدة البيانات
   }
 
-  // في حال تخصيص الروبوتس من لوحة التحكم، يتم تطبيقه مباشرة
+  // في حال تخصيص الروبوتس من لوحة التحكم، يتم تحليله بالكامل بما في ذلك Sitemap و Host اليدوي
   if (customRobots) {
     const rules: MetadataRoute.Robots['rules'] = [];
     const lines = customRobots.split('\n');
@@ -25,12 +25,21 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     let currentUserAgent = '*';
     let allowList: string[] = [];
     let disallowList: string[] = [];
+    let customSitemap: string | string[] | undefined = undefined;
+    let customHost: string | undefined = undefined;
 
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (!line || line.startsWith('#')) continue;
 
-      if (line.toLowerCase().startsWith('user-agent:')) {
+      if (line.toLowerCase().startsWith('sitemap:')) {
+        const sm = line.split(':').slice(1).join(':').trim();
+        if (sm) {
+          customSitemap = customSitemap ? (Array.isArray(customSitemap) ? [...customSitemap, sm] : [customSitemap, sm]) : sm;
+        }
+      } else if (line.toLowerCase().startsWith('host:')) {
+        customHost = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().startsWith('user-agent:')) {
         if (allowList.length > 0 || disallowList.length > 0) {
           rules.push({
             userAgent: currentUserAgent,
@@ -60,12 +69,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
     return {
       rules,
-      sitemap: `${baseUrl}/sitemap.xml`,
-      host: baseUrl,
+      ...(customSitemap ? { sitemap: customSitemap } : {}),
+      ...(customHost ? { host: customHost } : {}),
     };
   }
 
-  // الإعداد الافتراضي المحسن للسيو
+  // الإعداد الافتراضي في حال عدم وجود نص مخصص
   return {
     rules: [
       {
@@ -79,6 +88,5 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
   };
 }
