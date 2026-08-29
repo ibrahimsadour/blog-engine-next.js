@@ -119,10 +119,10 @@ model City {
   name         String
   slug         String               @unique
   image        String?
- description  String?              @db.Text
-  keywords     String?
-  metaTitle    String?
-  metaDesc     String?
+  description  String?              @db.Text
+  keywords     String?              @db.Text
+  metaTitle    String?              @db.Text
+  metaDesc     String?              @db.Text
   isActive     Boolean              @default(true)
   sortOrder    Int                  @default(0)
   createdAt    DateTime             @default(now())
@@ -134,11 +134,11 @@ model Service {
   id              String               @id @default(cuid())
   name            String
   slug            String               @unique
-  image        String?
-  description     String?
-  keywords        String?
-  metaTitle       String?
-  metaDesc        String?
+  image           String?
+  description     String?              @db.Text
+  keywords        String?              @db.Text
+  metaTitle       String?              @db.Text
+  metaDesc        String?              @db.Text
   isActive        Boolean              @default(true)
   sortOrder       Int                  @default(0)
   createdAt       DateTime             @default(now())
@@ -152,10 +152,10 @@ model CityServiceContent {
   serviceId         String
   city              City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  customTitle       String?
-  customDescription String?
-  metaTitle         String?
-  metaDesc          String?
+  customTitle       String?              @db.Text
+  customDescription String?              @db.Text
+  metaTitle         String?              @db.Text
+  metaDesc          String?              @db.Text
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -183,9 +183,9 @@ model Car {
   name        String
   slug        String   @unique
   description String?  @db.Text
-  metaTitle   String?
+  metaTitle   String?  @db.Text
   metaDesc    String?  @db.Text
-  keywords    String?
+  keywords    String?  @db.Text
   image       String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
