@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
-import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2, ExternalLink, Save, ArrowRight } from 'lucide-react';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
   ssr: false,
@@ -25,7 +26,7 @@ interface Category {
 
 interface ArticleFormProps {
   categories: Category[];
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<any>;
   initialData?: {
     id?: string;
     title?: string;
@@ -50,7 +51,9 @@ interface ArticleFormProps {
 export default function ArticleForm({ categories, action, initialData }: ArticleFormProps) {
   const router = useRouter();
 
-  // مفتاح التخزين الفريد للمسودة (يختلف للمقال الجديد عن تعديل مقال قائم)
+  const isEditMode = Boolean(initialData?.id || initialData?.slug);
+  const [articleId, setArticleId] = useState<string | undefined>(initialData?.id);
+  
   const storageKey = initialData?.id
     ? `draft_article_${initialData.id}`
     : 'draft_article_new';
@@ -71,18 +74,18 @@ export default function ArticleForm({ categories, action, initialData }: Article
   const [noIndex, setNoIndex] = useState<boolean>(initialData?.noIndex ?? false);
   const [noFollow, setNoFollow] = useState<boolean>(initialData?.noFollow ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavedOnServer, setIsSavedOnServer] = useState<boolean>(isEditMode);
+  
   const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>(
     initialData?.faqs && initialData.faqs.length > 0
       ? initialData.faqs
       : [{ question: '', answer: '' }]
   );
 
-  // حالات المسودة والحفظ المحلي
   const [hasDraft, setHasDraft] = useState(false);
   const [isSavedLocally, setIsSavedLocally] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  // 1. فحص وجود مسودة محفوظة محلياً عند تحميل الصفحة
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -92,12 +95,9 @@ export default function ArticleForm({ categories, action, initialData }: Article
           setHasDraft(true);
         }
       }
-    } catch {
-      // تجاهل أخطاء التخزين
-    }
+    } catch {}
   }, [storageKey]);
 
-  // 2. الحفظ التلقائي في LocalStorage عند إجراء أي تعديل
   useEffect(() => {
     if (!title && !content && !excerpt && !targetKeyword) return;
 
@@ -149,7 +149,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
     storageKey,
   ]);
 
-  // 3. منع إغلاق المتصفح أو الضغط على زر الرجوع عند وجود بيانات غير محفوظة
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -162,7 +161,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // 4. استعادة بيانات المسودة المحفوظة
   const handleRestoreDraft = () => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -193,7 +191,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
     }
   };
 
-  // 5. تجاهل وحذف المسودة
   const handleDiscardDraft = () => {
     if (window.confirm('هل تريد حذف المسودة المحفوظة تلقائياً؟')) {
       localStorage.removeItem(storageKey);
@@ -273,31 +270,101 @@ export default function ArticleForm({ categories, action, initialData }: Article
     formData.set('noFollow', noFollow ? 'true' : 'false');
 
     setIsSubmitting(true);
-    const toastId = toast.loading(
-      isPublished ? 'جاري حفظ ونشر المقال...' : 'جاري حفظ المقال كمسودة...'
-    );
+    const toastId = toast.loading('جاري حفظ المقال...');
 
     try {
-      await action(formData);
+      const result = await action(formData);
 
-      // مسح المسودة المحلية بعد نجاح الحفظ في قاعدة البيانات
       localStorage.removeItem(storageKey);
       setIsDirty(false);
+      setIsSavedOnServer(true);
 
-      toast.success(isPublished ? 'تم نشر المقال بنجاح!' : 'تم حفظ المقال كمسودة بنجاح!', {
+      if (!articleId && result?.id) {
+        setArticleId(result.id);
+        window.history.replaceState(null, '', `/admin/articles/${result.id}/edit`);
+      }
+
+      toast.success(isPublished ? 'تم حفظ ونشر المقال بنجاح!' : 'تم حفظ التعديلات كمسودة بنجاح!', {
         id: toastId,
       });
-      router.push('/admin');
+
       router.refresh();
     } catch (error: any) {
       toast.error(error?.message || 'تعذر حفظ المقال، يرجى المحاولة مرة أخرى', { id: toastId });
+    } finally {
       setIsSubmitting(false);
     }
   }
 
+  const activeArticleId = articleId || initialData?.id;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* شريط استرجاع المسودة التلقائية عند الدخول */}
+      {/* شريط التحكم العلوي المثبت */}
+      <div className="sticky top-16 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin"
+            className="flex items-center gap-1 rounded-xl bg-gray-100 p-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition"
+            title="العودة للوحة التحكم"
+          >
+            <ArrowRight size={18} />
+            <span className="hidden sm:inline">الرئيسية</span>
+          </Link>
+          <span className="text-xs font-bold text-gray-800 sm:text-sm">
+            {activeArticleId ? 'تعديل المقال' : 'إنشاء مقال جديد'}
+          </span>
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">
+            {isSavedLocally ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                <span className="text-emerald-700 font-semibold">محفوظ محلياً</span>
+              </>
+            ) : isDirty ? (
+              <span className="text-amber-600">تغييرات غير محفوظة</span>
+            ) : (
+              <span>كل شيء محفوظ</span>
+            )}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* زر المعاينة / عرض المقال */}
+          {(isSavedOnServer || activeArticleId) && slug && (
+            <a
+              href={`/${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 shadow-xs hover:bg-gray-50 hover:text-blue-600 transition"
+            >
+              <ExternalLink size={14} />
+              <span>{isPublished ? 'عرض المقال' : 'معاينة المسودة'}</span>
+            </a>
+          )}
+
+          {/* زر الحفظ / التعديل العلوي */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 disabled:opacity-50 ${
+              isPublished ? 'bg-blue-600 hover:bg-blue-700' : 'bg-amber-600 hover:bg-amber-700'
+            }`}
+          >
+            <Save size={14} />
+            <span>
+              {isSubmitting
+                ? 'جاري الحفظ...'
+                : activeArticleId
+                ? 'حفظ التعديلات'
+                : isPublished
+                ? 'نشر المقال'
+                : 'حفظ كمسودة'}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* شريط استرجاع المسودة */}
       {hasDraft && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-900 sm:text-sm">
@@ -324,22 +391,7 @@ export default function ArticleForm({ categories, action, initialData }: Article
         </div>
       )}
 
-      {/* مؤشر الحفظ التلقائي */}
-      <div className="flex justify-end">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
-          {isSavedLocally ? (
-            <>
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-700 font-semibold">محفوظ تلقائياً في المتصفح</span>
-            </>
-          ) : isDirty ? (
-            <span className="text-amber-600">جاري حفظ المسودة...</span>
-          ) : (
-            <span>التغييرات محفوظة</span>
-          )}
-        </span>
-      </div>
-
+      {/* العنوان والرابط الدائم */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-bold text-gray-700">عنوان المقال (H1)</label>
@@ -367,7 +419,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* التصنيف والمنطقة الجغرافية فقط (بدون الكلمة المفتاحية) */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-bold text-gray-700">التصنيف</label>
           <select
@@ -383,17 +436,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-bold text-gray-700">الكلمة المفتاحية المستهدفة</label>
-          <input
-            type="text"
-            name="targetKeyword"
-            value={targetKeyword}
-            onChange={(e) => setTargetKeyword(e.target.value)}
-            placeholder="مثال: تبديل بطارية"
-            className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
-          />
         </div>
         <div>
           <label className="mb-1 block text-xs font-bold text-gray-700">المنطقة الجغرافية</label>
@@ -456,14 +498,13 @@ export default function ArticleForm({ categories, action, initialData }: Article
         <RichTextEditor content={content} onChange={setContent} />
       </div>
 
-      {/* قسم حالة النشر والتحكم في محركات البحث (Robots Directives) */}
+      {/* قسم حالة النشر والتحكم في محركات البحث */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs space-y-5">
         <div>
           <h3 className="text-xs font-bold text-gray-800">حالة النشر والظهور في محركات البحث</h3>
           <p className="text-[11px] text-gray-400">تحكم في حالة المقال وتوجيهات عناكب الأرشفة</p>
         </div>
 
-        {/* 1. حالة النشر (منشور / مسودة) */}
         <div className="flex flex-wrap items-center gap-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-gray-800">
             <input
@@ -488,7 +529,6 @@ export default function ArticleForm({ categories, action, initialData }: Article
           </label>
         </div>
 
-        {/* 2. توجيهات الروبوتس (Index / Noindex & Follow / Nofollow) */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
             <label className="flex cursor-pointer items-start gap-3">
@@ -526,17 +566,41 @@ export default function ArticleForm({ categories, action, initialData }: Article
         </div>
       </div>
 
-      {/* فاحص ومعاين الـ SEO الحي المباشر */}
-      <SeoLiveOptimizer
-        title={title}
-        slug={slug}
-        metaTitle={metaTitle}
-        metaDesc={metaDesc}
-        targetKeyword={targetKeyword}
-        content={content}
-        onMetaTitleChange={setMetaTitle}
-        onMetaDescChange={setMetaDesc}
-      />
+      {/* قسم الـ SEO المدمج: الكلمة المفتاحية + العنوان والوصف + المعاين المباشر */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs space-y-4">
+        <div>
+          <h3 className="text-xs font-bold text-gray-800">تحسين محركات البحث (SEO Settings)</h3>
+          <p className="text-[11px] text-gray-400">حدد الكلمة المفتاحية المستهدفة وعنوان ووصف السيو</p>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-bold text-gray-700">
+            الكلمة المفتاحية المستهدفة (Focus Target Keyword)
+          </label>
+          <input
+            type="text"
+            name="targetKeyword"
+            value={targetKeyword}
+            onChange={(e) => setTargetKeyword(e.target.value)}
+            placeholder="مثال: تبديل بطارية سيارات"
+            className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+          />
+          <p className="mt-1 text-[11px] text-gray-400">
+            العبارة الأساسية التي يستهدفها المقال ويتم فحص كثافتها وتوزيعها في المحتوى
+          </p>
+        </div>
+
+        <SeoLiveOptimizer
+          title={title}
+          slug={slug}
+          metaTitle={metaTitle}
+          metaDesc={metaDesc}
+          targetKeyword={targetKeyword}
+          content={content}
+          onMetaTitleChange={setMetaTitle}
+          onMetaDescChange={setMetaDesc}
+        />
+      </div>
 
       {/* الأسئلة الشائعة FAQ */}
       <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
@@ -583,7 +647,7 @@ export default function ArticleForm({ categories, action, initialData }: Article
         </div>
       </div>
 
-      {/* قسم الرابط الكنسي */}
+      {/* الرابط الكنسي */}
       <div>
         <label className="mb-1 block text-xs font-bold text-gray-700">الرابط الكنسي (Canonical URL)</label>
         <input
@@ -599,6 +663,7 @@ export default function ArticleForm({ categories, action, initialData }: Article
         </p>
       </div>
 
+      {/* زر الحفظ السفلي */}
       <button
         type="submit"
         disabled={isSubmitting}
@@ -608,6 +673,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
       >
         {isSubmitting
           ? 'جاري الحفظ...'
+          : activeArticleId
+          ? 'حفظ التعديلات'
           : isPublished
           ? 'نشر المقال الآن'
           : 'حفظ المقال كمسودة'}
