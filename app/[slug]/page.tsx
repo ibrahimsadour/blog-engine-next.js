@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { db } from '@/lib/db';
 import {
   generateArticleSchema,
@@ -23,7 +24,6 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// دالة لتنظيف وتوليد معرف slug متطابق مع الأحرف العربية والإنجليزية
 function slugifyHeading(text: string): string {
   return text
     .toString()
@@ -36,7 +36,6 @@ function slugifyHeading(text: string): string {
     .toLowerCase();
 }
 
-// دالة لحقن الـ ID داخل وسوم H2 و H3 في المقال واستخراج قائمة العناوين لجدول المحتويات
 function injectHeadingIds(html: string): {
   htmlWithIds: string;
   headings: { id: string; text: string; level: number }[];
@@ -75,6 +74,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const decodedSlug = decodeURIComponent(rawSlug).trim();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
+  // 1. التحقق من المدن أولاً
+  const city = await db.city.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      isActive: true,
+    },
+  });
+
+  if (city) {
+    return {
+      title: city.metaTitle || `خدماتنا في ${city.name}`,
+      description: city.metaDesc || `استعرض أفضل الخدمات المتوفرة لدينا في ${city.name}.`,
+      keywords: city.keywords || undefined,
+      alternates: {
+        canonical: `${siteUrl}/${city.slug}`,
+      },
+    };
+  }
+
+  // 2. التحقق من المقالات
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -131,6 +150,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  // 3. التحقق من الصفحات الثابتة
   const page = await db.page.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -163,7 +183,79 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
   const cookieStore = await cookies();
   const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
+  // 1. فحص ما إذا كان الـ slug يعود لمدينة (City)
+  const city = await db.city.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      isActive: true,
+    },
+  });
+
+  if (city) {
+    const services = await db.service.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const breadcrumbItems = [
+      { name: 'الرئيسية', url: '/' },
+      { name: 'المدن', url: '/cities' },
+      { name: city.name, url: `/${city.slug}` },
+    ];
+    const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        />
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+          <div className="mx-auto max-w-4xl space-y-8">
+            <Breadcrumbs items={breadcrumbItems} />
+
+            <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-4">
+              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">
+                خدماتنا في مدينة {city.name}
+              </h1>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                {city.description || `نقدم لك أفضل الخدمات الاحترافية في ${city.name} بجودة عالية وضمان شامل.`}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {services.map((service) => (
+                <Link
+                  key={service.id}
+                  href={`/${city.slug}/${service.slug}`}
+                  className="bg-white p-6 rounded-xl border shadow-sm hover:border-blue-500 hover:shadow-md transition block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {service.name} {city.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm line-clamp-2">
+                    {service.description || `أفضل خدمات ${service.name} في ${city.name} بجودة عالية.`}
+                  </p>
+                  <span className="inline-block text-blue-600 text-sm font-bold pt-2">عرض التفاصيل ←</span>
+                </Link>
+              ))}
+            </div>
+
+            {services.length === 0 && (
+              <div className="bg-white p-8 rounded-xl text-center text-gray-500">
+                لا توجد خدمات متاحة حالياً في هذه المدينة.
+              </div>
+            )}
+          </div>
+        </main>
+        <StickyFloatingBar />
+      </>
+    );
+  }
+
+  // 2. فحص ما إذا كان الـ slug يعود لمقال (Article)
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -171,8 +263,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     },
     include: { category: true, author: true },
   });
-
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
   if (article) {
     const otherArticles = await db.article.findMany({
@@ -252,10 +342,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     const faqs = (article.faqs as unknown as Array<{ question: string; answer: string }>) || [];
     const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
 
-    // 1. حقن الـ ID في وسوم H2 و H3 داخل محتوى المقال
     const { htmlWithIds, headings } = injectHeadingIds(article.content);
-
-    // 2. حقن الروابط الداخلية
     const processedContent = injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`);
 
     return (
@@ -342,10 +429,8 @@ export default async function DynamicSlugPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* جدول المحتويات */}
             {headings.length > 0 && <TableOfContents headings={headings} />}
 
-            {/* محتوى المقال مع إضافة scroll-mt-24 لتفادي حجب العنوان تحت الهيدر */}
             <div
               className="prose prose-lg max-w-none leading-relaxed text-gray-800 prose-headings:scroll-mt-24 prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl"
               dangerouslySetInnerHTML={{ __html: processedContent }}
@@ -365,6 +450,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     );
   }
 
+  // 3. فحص ما إذا كان الـ slug يعود لصفحة ثابتة (Page)
   const page = await db.page.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],

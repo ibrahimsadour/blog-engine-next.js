@@ -113,3 +113,80 @@ model Redirect {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+model City {
+  id           String               @id @default(cuid())
+  name         String
+  slug         String               @unique
+  description  String?
+  keywords     String?
+  metaTitle    String?
+  metaDesc     String?
+  isActive     Boolean              @default(true)
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  cityServices CityServiceContent[]
+}
+
+model Service {
+  id              String               @id @default(cuid())
+  name            String
+  slug            String               @unique
+  description     String?
+  keywords        String?
+  metaTitle       String?
+  metaDesc        String?
+  isActive        Boolean              @default(true)
+  sortOrder       Int                  @default(0)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  cityServices    CityServiceContent[]
+}
+
+model CityServiceContent {
+  id                String   @id @default(cuid())
+  cityId            String
+  serviceId         String
+  city              City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customTitle       String?
+  customDescription String?
+  metaTitle         String?
+  metaDesc          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([cityId, serviceId])
+}
+
+model GlobalServiceTemplate {
+  id                String   @id @default(cuid())
+  titleTemplate     String   @db.Text
+  descTemplate      String   @db.Text
+  introTemplates    String?  @db.Text
+  outroTemplates    String?  @db.Text
+  faqTemplates      String?  @db.Text // بنك الأسئلة الشائعة
+  neighborhoodTemplates String?  @db.Text // بنك المعالم والأحياء المحلية
+  testimonialTemplates  String?  @db.Text // بنك التقييمات والآراء المحلية
+  metaTitleTemplate String?  @db.Text
+  metaDescTemplate  String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+
+model Car {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  metaTitle   String?
+  metaDesc    String?  @db.Text
+  keywords    String?
+  image       String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

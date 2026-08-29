@@ -149,3 +149,77 @@ export async function updateArticleAction(id: string, formData: FormData) {
   revalidatePath(`/blog/${slug}`);
   revalidatePath(`/category/${categorySlug}`);
 }
+
+export async function saveCityServiceContentAction(formData: FormData) {
+  const cityId = (formData.get('cityId') as string) || '';
+  const serviceId = (formData.get('serviceId') as string) || '';
+  const customTitle = (formData.get('customTitle') as string) || null;
+  const customDescription = (formData.get('customDescription') as string) || null;
+  const metaTitle = (formData.get('metaTitle') as string) || null;
+  const metaDesc = (formData.get('metaDesc') as string) || null;
+
+  if (!cityId || !serviceId) {
+    throw new Error('الرجاء تحديد المدينة والخدمة');
+  }
+
+  await db.cityServiceContent.upsert({
+    where: {
+      cityId_serviceId: { cityId, serviceId },
+    },
+    update: {
+      customTitle,
+      customDescription,
+      metaTitle,
+      metaDesc,
+    },
+    create: {
+      cityId,
+      serviceId,
+      customTitle,
+      customDescription,
+      metaTitle,
+      metaDesc,
+    },
+  });
+
+  revalidatePath('/admin/city-services');
+}
+
+export async function saveGlobalServiceTemplateAction(formData: FormData) {
+  const titleTemplate = (formData.get('titleTemplate') as string) || '';
+  const descTemplate = (formData.get('descTemplate') as string) || '';
+  const introTemplates = (formData.get('introTemplates') as string) || '';
+  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const faqTemplates = (formData.get('faqTemplates') as string) || '';
+  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
+  const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || null;
+  const metaDescTemplate = (formData.get('metaDescTemplate') as string) || null;
+
+  const existing = await db.globalServiceTemplate.findFirst();
+
+  const payload = {
+    titleTemplate,
+    descTemplate,
+    introTemplates,
+    outroTemplates,
+    faqTemplates,
+    neighborhoodTemplates,
+    testimonialTemplates,
+    metaTitleTemplate,
+    metaDescTemplate,
+  };
+
+  if (existing) {
+    await db.globalServiceTemplate.update({
+      where: { id: existing.id },
+      data: payload,
+    });
+  } else {
+    await db.globalServiceTemplate.create({
+      data: payload,
+    });
+  }
+
+  revalidatePath('/admin/service-templates');
+}

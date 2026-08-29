@@ -58,6 +58,38 @@ export default function AdminLayout({
               </Link>
 
               <Link
+                href="/admin/cities"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>📁</span>
+                <span>المدن</span>
+              </Link>
+
+              <Link
+                href="/admin/cars"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>📁</span>
+                <span>السيارات</span>
+              </Link>
+
+              <Link
+                href="/admin/services"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>📁</span>
+                <span>الخدمات</span>
+              </Link>
+
+              <Link
+                href="/admin/service-templates"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>📐</span>
+                <span>قوالب الخدمات والمدن</span>
+              </Link>
+
+              <Link
                 href="/admin/settings"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
