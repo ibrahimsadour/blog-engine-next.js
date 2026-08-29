@@ -119,7 +119,7 @@ model City {
   name         String
   slug         String               @unique
   image        String?
-  description  String?
+ description  String?              @db.Text
   keywords     String?
   metaTitle    String?
   metaDesc     String?
