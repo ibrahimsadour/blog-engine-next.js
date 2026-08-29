@@ -7,16 +7,23 @@ import { toast } from 'sonner';
 interface ImageUploaderProps {
   initialImage?: string;
   name?: string;
+  onChange?: (url: string) => void;
 }
 
 export default function ImageUploader({
   initialImage = '',
   name = 'featuredImage',
+  onChange,
 }: ImageUploaderProps) {
   const [imageUrl, setImageUrl] = useState(initialImage);
   const [isUploading, setIsUploading] = useState(false);
   const [useCustomUrl, setUseCustomUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateImageUrl = (newUrl: string) => {
+    setImageUrl(newUrl);
+    onChange?.(newUrl);
+  };
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -41,7 +48,7 @@ export default function ImageUploader({
 
       if (!res.ok) throw new Error(data.error || 'فشل الرفع');
 
-      setImageUrl(data.url);
+      updateImageUrl(data.url);
       toast.success('تم رفع الصورة بنجاح!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'حدث خطأ أثناء الرفع', { id: toastId });
@@ -63,7 +70,7 @@ export default function ImageUploader({
         // حذف الرابط حتى وإن تعذر حذف الملف الفيزيائي
       }
     }
-    setImageUrl('');
+    updateImageUrl('');
     toast.info('تمت إزالة الصورة');
   }
 
@@ -113,7 +120,7 @@ export default function ImageUploader({
             type="url"
             placeholder="https://example.com/banner.webp"
             value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
+            onChange={(e) => updateImageUrl(e.target.value)}
             className="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-mono focus:border-blue-500 focus:outline-hidden"
           />
         </div>
