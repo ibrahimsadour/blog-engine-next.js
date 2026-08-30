@@ -7,10 +7,34 @@ type Props = {
   params: Promise<{ slug: string; service: string }>;
 };
 
-function parseTemplate(template: string, cityName: string, serviceName: string): string {
+// دالة معالجة المتغيرات وتنسيق رقم الهاتف بإضافة +965 تلقائياً
+function parseTemplate(
+  template: string,
+  cityName: string,
+  serviceName: string,
+  rawPhone: string = '',
+  siteName: string = ''
+): string {
+  if (!template) return '';
+
+  let formattedPhone = rawPhone.trim();
+  if (formattedPhone) {
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('965')) {
+        formattedPhone = '+' + formattedPhone;
+      } else {
+        formattedPhone = '+965' + formattedPhone;
+      }
+    }
+  }
+
   return template
     .replace(/{city}/g, cityName)
-    .replace(/{service}/g, serviceName);
+    .replace(/{service}/g, serviceName)
+    .replace(/{phone_number}/gi, formattedPhone)
+    .replace(/{phone}/gi, formattedPhone)
+    .replace(/{siteName}/g, siteName)
+    .replace(/{site_name}/g, siteName);
 }
 
 function getStableItem(items: string[], seed: string): string {
@@ -39,7 +63,7 @@ function getStableMultiple<T>(items: T[], seed: string, count: number = 3): T[] 
   return shuffled.slice(0, count);
 }
 
-// دالة توليد كلمات مفتاحية دقيقة وموطنة (بحد أقصى 8 كلمات)
+// دالة توليد كلمات مفتاحية موطنة ومحددة بدقة (بحد أقصى 8 كلمات)
 function generateLocalizedKeywords(
   service: { name: string; keywords?: string | null },
   cityName: string,
@@ -80,6 +104,46 @@ function generateLocalizedKeywords(
   return uniqueKeywords.slice(0, limit).join('، ');
 }
 
+// دالة جلب إعدادات الموقع وتغطية مفتاح phone_number بدقة
+async function getSiteConfig() {
+  try {
+    const settings = await db.setting.findMany();
+    const settingsMap = Object.fromEntries(
+      settings.map((s) => [s.key.trim().toLowerCase(), s.value?.trim() || ''])
+    );
+
+    const rawPhone =
+      settingsMap['phone_number'] ||
+      settingsMap['phone'] ||
+      settingsMap['site_phone'] ||
+      settingsMap['contact_phone'] ||
+      settingsMap['cta_phone'] ||
+      settingsMap['mobile'] ||
+      '';
+
+    let phone = rawPhone.trim();
+    if (phone) {
+      if (!phone.startsWith('+')) {
+        if (phone.startsWith('965')) {
+          phone = '+' + phone;
+        } else {
+          phone = '+965' + phone;
+        }
+      }
+    }
+
+    const siteName =
+      settingsMap['site_name'] ||
+      settingsMap['sitename'] ||
+      settingsMap['title'] ||
+      'أوتو كراج';
+
+    return { phone, siteName };
+  } catch {
+    return { phone: '', siteName: 'أوتو كراج' };
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, service: serviceSlug } = await params;
 
@@ -90,35 +154,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!city || !service) return {};
 
+  const { phone, siteName } = await getSiteConfig();
+
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
   const canonicalUrl = `${baseUrl}/${citySlug}/${serviceSlug}`;
 
   const template = await db.globalServiceTemplate.findFirst();
 
   // بنك خيارات Meta Title
-  const metaTitleList = template?.metaTitleTemplate 
-    ? template.metaTitleTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+  const metaTitleList = template?.metaTitleTemplate
+    ? template.metaTitleTemplate.split('---').map((s) => s.trim()).filter(Boolean)
     : [];
   const rawMetaTitle = getStableItem(metaTitleList, `metatitle-${citySlug}-${serviceSlug}`);
-  const metaTitle = rawMetaTitle 
-    ? parseTemplate(rawMetaTitle, city.name, service.name)
+  const metaTitle = rawMetaTitle
+    ? parseTemplate(rawMetaTitle, city.name, service.name, phone, siteName)
     : `${service.metaTitle || service.name} في ${city.name}`;
 
   // بنك خيارات Meta Description
-  const metaDescList = template?.metaDescTemplate 
-    ? template.metaDescTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+  const metaDescList = template?.metaDescTemplate
+    ? template.metaDescTemplate.split('---').map((s) => s.trim()).filter(Boolean)
     : [];
   const rawMetaDesc = getStableItem(metaDescList, `metadesc-${citySlug}-${serviceSlug}`);
   const metaDesc = rawMetaDesc
-    ? parseTemplate(rawMetaDesc, city.name, service.name)
+    ? parseTemplate(rawMetaDesc, city.name, service.name, phone, siteName)
     : service.metaDesc || `أفضل خدمات ${service.name} في ${city.name}.`;
 
   // بنك خيارات الصور
-  const imageList = template?.imageTemplates 
-    ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
+  const imageList = template?.imageTemplates
+    ? template.imageTemplates.split('---').map((s) => s.trim()).filter(Boolean)
     : [];
   const rawImage = getStableItem(imageList, `image-${citySlug}-${serviceSlug}`);
-  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name) : '';
+  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name, phone, siteName) : '';
 
   // الكلمات المفتاحية
   const dynamicKeywords = generateLocalizedKeywords(service, city.name, 8);
@@ -146,15 +212,15 @@ export default async function CityServicePage({ params }: Props) {
   const [city, service, otherCities, otherServices] = await Promise.all([
     db.city.findUnique({ where: { slug: citySlug, isActive: true } }),
     db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
-    db.city.findMany({ 
-      where: { slug: { not: citySlug }, isActive: true }, 
-      take: 8, 
-      orderBy: { sortOrder: 'asc' } 
+    db.city.findMany({
+      where: { slug: { not: citySlug }, isActive: true },
+      take: 8,
+      orderBy: { sortOrder: 'asc' },
     }),
-    db.service.findMany({ 
-      where: { slug: { not: serviceSlug }, isActive: true }, 
-      take: 8, 
-      orderBy: { sortOrder: 'asc' } 
+    db.service.findMany({
+      where: { slug: { not: serviceSlug }, isActive: true },
+      take: 8,
+      orderBy: { sortOrder: 'asc' },
     }),
   ]);
 
@@ -162,63 +228,69 @@ export default async function CityServicePage({ params }: Props) {
     notFound();
   }
 
+  const { phone, siteName } = await getSiteConfig();
+
   const template = await db.globalServiceTemplate.findFirst();
 
   // بنك خيارات العنوان الرئيسي (H1)
-  const titleList = template?.titleTemplate 
-    ? template.titleTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+  const titleList = template?.titleTemplate
+    ? template.titleTemplate.split('---').map((s) => s.trim()).filter(Boolean)
     : [];
   const rawTitle = getStableItem(titleList, `title-${citySlug}-${serviceSlug}`);
-  const pageTitle = rawTitle 
-    ? parseTemplate(rawTitle, city.name, service.name) 
+  const pageTitle = rawTitle
+    ? parseTemplate(rawTitle, city.name, service.name, phone, siteName)
     : `أفضل خدمات ${service.name} في ${city.name}`;
 
   // بنك خيارات الصور
-  const imageList = template?.imageTemplates 
-    ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
+  const imageList = template?.imageTemplates
+    ? template.imageTemplates.split('---').map((s) => s.trim()).filter(Boolean)
     : [];
   const rawImage = getStableItem(imageList, `image-${citySlug}-${serviceSlug}`);
-  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name) : '';
+  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name, phone, siteName) : '';
 
-  const coreDescription = template?.descTemplate 
-    ? parseTemplate(template.descTemplate, city.name, service.name) 
+  const coreDescription = template?.descTemplate
+    ? parseTemplate(template.descTemplate, city.name, service.name, phone, siteName)
     : service.description || `نقدم لك أفضل خدمات ${service.name} الاحترافية في ${city.name} بجودة عالية وضمان شامل.`;
 
-  const introList = template?.introTemplates ? template.introTemplates.split('---').map(s => s.trim()).filter(Boolean) : [];
-  const outroList = template?.outroTemplates ? template.outroTemplates.split('---').map(s => s.trim()).filter(Boolean) : [];
-  const neighborhoodList = template?.neighborhoodTemplates ? template.neighborhoodTemplates.split('---').map(s => s.trim()).filter(Boolean) : [];
+  const introList = template?.introTemplates ? template.introTemplates.split('---').map((s) => s.trim()).filter(Boolean) : [];
+  const outroList = template?.outroTemplates ? template.outroTemplates.split('---').map((s) => s.trim()).filter(Boolean) : [];
+  const neighborhoodList = template?.neighborhoodTemplates ? template.neighborhoodTemplates.split('---').map((s) => s.trim()).filter(Boolean) : [];
 
   const rawIntro = getStableItem(introList, `intro-${citySlug}-${serviceSlug}`);
   const rawOutro = getStableItem(outroList, `outro-${citySlug}-${serviceSlug}`);
   const rawNeighborhood = getStableItem(neighborhoodList, `neighborhood-${citySlug}-${serviceSlug}`);
 
-  const selectedIntro = rawIntro ? parseTemplate(rawIntro, city.name, service.name) : '';
-  const selectedOutro = rawOutro ? parseTemplate(rawOutro, city.name, service.name) : '';
-  const selectedNeighborhood = rawNeighborhood ? parseTemplate(rawNeighborhood, city.name, service.name) : '';
+  const selectedIntro = rawIntro ? parseTemplate(rawIntro, city.name, service.name, phone, siteName) : '';
+  const selectedOutro = rawOutro ? parseTemplate(rawOutro, city.name, service.name, phone, siteName) : '';
+  const selectedNeighborhood = rawNeighborhood ? parseTemplate(rawNeighborhood, city.name, service.name, phone, siteName) : '';
 
-  const allFaqs = template?.faqTemplates ? template.faqTemplates.split('---').map(block => {
-    const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length >= 2) {
-      return { 
-        q: parseTemplate(lines[0], city.name, service.name), 
-        a: parseTemplate(lines.slice(1).join(' '), city.name, service.name) 
-      };
-    }
-    return null;
-  }).filter(Boolean) as Array<{q: string, a: string}> : [];
+  const allFaqs = template?.faqTemplates
+    ? template.faqTemplates.split('---').map((block) => {
+        const lines = block.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          return {
+            q: parseTemplate(lines[0], city.name, service.name, phone, siteName),
+            a: parseTemplate(lines.slice(1).join(' '), city.name, service.name, phone, siteName),
+          };
+        }
+        return null;
+      }).filter(Boolean) as Array<{ q: string; a: string }>
+    : [];
 
   const selectedFaqs = getStableMultiple(allFaqs, `faq-${citySlug}-${serviceSlug}`, 3);
 
-  const allTestimonials = template?.testimonialTemplates ? template.testimonialTemplates.split('---').map(block => {
-    const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length >= 2) {
-      return {
-        name: parseTemplate(lines[0], city.name, service.name),
-        comment: parseTemplate(lines.slice(1).join(' '), city.name, service.name)
-      };
-    }
-    return null;
-  }).filter(Boolean) as Array<{name: string, comment: string}> : [];
+  const allTestimonials = template?.testimonialTemplates
+    ? template.testimonialTemplates.split('---').map((block) => {
+        const lines = block.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          return {
+            name: parseTemplate(lines[0], city.name, service.name, phone, siteName),
+            comment: parseTemplate(lines.slice(1).join(' '), city.name, service.name, phone, siteName),
+          };
+        }
+        return null;
+      }).filter(Boolean) as Array<{ name: string; comment: string }>
+    : [];
 
   const selectedTestimonials = getStableMultiple(allTestimonials, `testimonial-${citySlug}-${serviceSlug}`, 2);
 
@@ -232,37 +304,46 @@ export default async function CityServicePage({ params }: Props) {
   const faqSchema = selectedFaqs.length > 0 ? {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": selectedFaqs.map(faq => ({
+    "mainEntity": selectedFaqs.map((faq) => ({
       "@type": "Question",
       "name": faq.q,
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": faq.a
-      }
-    }))
+        "text": faq.a,
+      },
+    })),
   } : null;
 
   const reviewSchema = selectedTestimonials.length > 0 ? {
     "@context": "https://schema.org",
     "@type": "Service",
     "name": `${service.name} في ${city.name}`,
+    "provider": {
+      "@type": "LocalBusiness",
+      "name": siteName || "أوتو كراج",
+      ...(phone ? { "telephone": phone } : {}),
+    },
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": city.name,
+    },
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.9",
-      "reviewCount": selectedTestimonials.length.toString()
+      "reviewCount": selectedTestimonials.length.toString(),
     },
-    "review": selectedTestimonials.map(t => ({
+    "review": selectedTestimonials.map((t) => ({
       "@type": "Review",
       "author": {
         "@type": "Person",
-        "name": t.name
+        "name": t.name,
       },
       "reviewRating": {
         "@type": "Rating",
-        "ratingValue": "5"
+        "ratingValue": "5",
       },
-      "reviewBody": t.comment
-    }))
+      "reviewBody": t.comment,
+    })),
   } : null;
 
   return (
@@ -283,9 +364,9 @@ export default async function CityServicePage({ params }: Props) {
       <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-4">
         {selectedImage && (
           <div className="mb-6 overflow-hidden rounded-xl border">
-            <img 
-              src={selectedImage} 
-              alt={`${service.name} في ${city.name}`} 
+            <img
+              src={selectedImage}
+              alt={`${service.name} في ${city.name}`}
               className="w-full h-auto max-h-[400px] object-cover"
             />
           </div>
@@ -293,7 +374,7 @@ export default async function CityServicePage({ params }: Props) {
         <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">
           {pageTitle}
         </h1>
-        <div 
+        <div
           className="text-gray-600 text-lg leading-relaxed prose max-w-none"
           dangerouslySetInnerHTML={{ __html: fullHtmlContent }}
         />
@@ -371,11 +452,20 @@ export default async function CityServicePage({ params }: Props) {
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl flex justify-between items-center">
+      {/* شريط الاتصال السريع */}
+      <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h3 className="font-bold text-blue-900 text-lg">تحتاج خدمة {service.name} فوراً في {city.name}؟</h3>
           <p className="text-blue-700 text-sm mt-1">فريقنا جاهز لخدمتك على مدار الساعة طوال أيام الأسبوع.</p>
         </div>
+        {phone && (
+          <a
+            href={`tel:${phone}`}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition active:scale-95 whitespace-nowrap"
+          >
+            اتصال فوري: {phone}
+          </a>
+        )}
       </div>
     </main>
   );

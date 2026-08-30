@@ -24,6 +24,20 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+// دالة معالجة المتغيرات واستبدال كافة صيغ رقم الهاتف واسم الموقع
+function parseContentVariables(
+  content: string, 
+  phone: string = '', 
+  siteName: string = ''
+): string {
+  if (!content) return '';
+  return content
+    .replace(/{phone_number}/gi, phone)
+    .replace(/{phone}/gi, phone)
+    .replace(/{siteName}/gi, siteName)
+    .replace(/{site_name}/gi, siteName);
+}
+
 function slugifyHeading(text: string): string {
   return text
     .toString()
@@ -68,11 +82,42 @@ function injectHeadingIds(html: string): {
   return { htmlWithIds, headings };
 }
 
+// دالة جلب إعدادات الموقع وتغطية مفتاح phone_number بدقة
+async function getSiteConfig() {
+  try {
+    const settings = await db.setting.findMany();
+    const settingsMap = Object.fromEntries(
+      settings.map((s) => [s.key.trim().toLowerCase(), s.value?.trim() || ''])
+    );
+
+    const phone =
+      settingsMap['phone_number'] ||
+      settingsMap['phone'] ||
+      settingsMap['site_phone'] ||
+      settingsMap['contact_phone'] ||
+      settingsMap['cta_phone'] ||
+      settingsMap['mobile'] ||
+      '';
+
+    const siteName =
+      settingsMap['site_name'] ||
+      settingsMap['sitename'] ||
+      settingsMap['title'] ||
+      'أوتو كراج';
+
+    return { phone, siteName };
+  } catch {
+    return { phone: '', siteName: 'أوتو كراج' };
+  }
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
+
+  const { phone, siteName } = await getSiteConfig();
 
   // 1. التحقق من المدن أولاً
   const city = await db.city.findFirst({
@@ -83,9 +128,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   if (city) {
+    const title = parseContentVariables(city.metaTitle || `خدماتنا في ${city.name}`, phone, siteName);
+    const description = parseContentVariables(city.metaDesc || `استعرض أفضل الخدمات المتوفرة لدينا في ${city.name}.`, phone, siteName);
+
     return {
-      title: city.metaTitle || `خدماتنا في ${city.name}`,
-      description: city.metaDesc || `استعرض أفضل الخدمات المتوفرة لدينا في ${city.name}.`,
+      title,
+      description,
       keywords: city.keywords || undefined,
       alternates: {
         canonical: `${siteUrl}/${city.slug}`,
@@ -109,12 +157,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         : `${siteUrl}${article.featuredImage}`
       : undefined;
 
+    const rawTitle = article.metaTitle || article.title;
+    const rawDesc = article.metaDesc || article.excerpt || undefined;
+
+    const title = parseContentVariables(rawTitle, phone, siteName);
+    const description = rawDesc ? parseContentVariables(rawDesc, phone, siteName) : undefined;
+
     const keywordsValue =
       article.targetKeyword && article.targetKeyword.trim() ? article.targetKeyword.trim() : article.title;
 
     return {
-      title: article.metaTitle || article.title,
-      description: article.metaDesc || article.excerpt || undefined,
+      title,
+      description,
       keywords: keywordsValue,
       alternates: {
         canonical: article.canonicalUrl || url,
@@ -131,8 +185,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         },
       },
       openGraph: {
-        title: article.metaTitle || article.title,
-        description: article.metaDesc || article.excerpt || undefined,
+        title,
+        description,
         url,
         type: 'article',
         locale: 'ar_KW',
@@ -143,8 +197,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
       twitter: {
         card: 'summary_large_image',
-        title: article.metaTitle || article.title,
-        description: article.metaDesc || article.excerpt || undefined,
+        title,
+        description,
         images: ogImageUrl ? [ogImageUrl] : [],
       },
     };
@@ -158,9 +212,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   if (page && page.isPublished) {
+    const title = parseContentVariables(page.metaTitle || page.title, phone, siteName);
+    const description = page.metaDesc ? parseContentVariables(page.metaDesc, phone, siteName) : undefined;
+
     return {
-      title: page.metaTitle || page.title,
-      description: page.metaDesc || undefined,
+      title,
+      description,
       alternates: {
         canonical: `${siteUrl}/${page.slug}`,
       },
@@ -183,7 +240,9 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
   const cookieStore = await cookies();
   const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
+
+  const { phone, siteName } = await getSiteConfig();
 
   // 1. فحص ما إذا كان الـ slug يعود لمدينة (City)
   const city = await db.city.findFirst({
@@ -221,7 +280,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
                 خدماتنا في مدينة {city.name}
               </h1>
               <p className="text-gray-600 text-lg leading-relaxed">
-                {city.description || `نقدم لك أفضل الخدمات الاحترافية في ${city.name} بجودة عالية وضمان شامل.`}
+                {parseContentVariables(city.description || `نقدم لك أفضل الخدمات الاحترافية في ${city.name} بجودة عالية وضمان شامل.`, phone, siteName)}
               </p>
             </div>
 
@@ -236,7 +295,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
                     {service.name} {city.name}
                   </h3>
                   <p className="text-gray-600 text-sm line-clamp-2">
-                    {service.description || `أفضل خدمات ${service.name} في ${city.name} بجودة عالية.`}
+                    {parseContentVariables(service.description || `أفضل خدمات ${service.name} في ${city.name} بجودة عالية.`, phone, siteName)}
                   </p>
                   <span className="inline-block text-blue-600 text-sm font-bold pt-2">عرض التفاصيل ←</span>
                 </Link>
@@ -313,11 +372,17 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
     const pageUrl = `${siteUrl}/${article.slug}`;
 
+    // معالجة نصوص المقال والأسئلة الشائعة بالمتغيرات الديناميكية
+    const parsedTitle = parseContentVariables(article.title, phone, siteName);
+    const parsedExcerpt = article.excerpt ? parseContentVariables(article.excerpt, phone, siteName) : '';
+    const parsedMetaDesc = article.metaDesc ? parseContentVariables(article.metaDesc, phone, siteName) : undefined;
+    const parsedContent = parseContentVariables(article.content, phone, siteName);
+
     const articleSchema = generateArticleSchema(
       {
-        title: article.title,
-        excerpt: article.excerpt,
-        metaDescription: article.metaDesc,
+        title: parsedTitle,
+        excerpt: parsedExcerpt,
+        metaDescription: parsedMetaDesc,
         featuredImage: article.featuredImage,
         createdAt: article.createdAt,
         updatedAt: article.updatedAt,
@@ -327,22 +392,26 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     );
 
     const localBusinessSchema = generateLocalBusinessSchema({
-      name: article.title,
-      description: article.metaDesc || article.excerpt || undefined,
+      name: parsedTitle,
+      description: parsedMetaDesc || parsedExcerpt || undefined,
       areaServed: article.targetArea || 'الكويت',
       url: pageUrl,
     });
 
     const breadcrumbItems = [
       ...(article.category ? [{ name: article.category.name, url: `/category/${article.category.slug}` }] : []),
-      { name: article.title, url: `/${article.slug}` },
+      { name: parsedTitle, url: `/${article.slug}` },
     ];
     const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
 
-    const faqs = (article.faqs as unknown as Array<{ question: string; answer: string }>) || [];
+    const rawFaqs = (article.faqs as unknown as Array<{ question: string; answer: string }>) || [];
+    const faqs = rawFaqs.map((f) => ({
+      question: parseContentVariables(f.question, phone, siteName),
+      answer: parseContentVariables(f.answer, phone, siteName),
+    }));
     const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
 
-    const { htmlWithIds, headings } = injectHeadingIds(article.content);
+    const { htmlWithIds, headings } = injectHeadingIds(parsedContent);
     const processedContent = injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`);
 
     return (
@@ -396,7 +465,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
             <header className="my-6 border-b border-gray-100 pb-6">
               <h1 className="text-2xl font-extrabold text-gray-900 md:text-4xl md:leading-tight">
-                {article.title}
+                {parsedTitle}
               </h1>
 
               <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
@@ -420,7 +489,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
               <div className="relative mb-8 h-72 w-full overflow-hidden rounded-xl md:h-96">
                 <Image
                   src={article.featuredImage}
-                  alt={article.altText || article.title}
+                  alt={article.altText || parsedTitle}
                   fill
                   priority
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
@@ -459,9 +528,12 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   });
 
   if (page) {
+    const parsedPageTitle = parseContentVariables(page.title, phone, siteName);
+    const parsedPageContent = parseContentVariables(page.content, phone, siteName);
+
     const breadcrumbs = [
       { name: 'الرئيسية', url: '/' },
-      { name: page.title, url: `/${page.slug}` },
+      { name: parsedPageTitle, url: `/${page.slug}` },
     ];
 
     return (
@@ -472,7 +544,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
             <header className="my-6 border-b border-gray-100 pb-6">
               <h1 className="text-2xl font-black text-gray-900 md:text-4xl md:leading-tight">
-                {page.title}
+                {parsedPageTitle}
               </h1>
               <div className="mt-3 flex items-center gap-2 text-xs font-medium text-gray-400">
                 <span>آخر تحديث:</span>
@@ -488,7 +560,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
             <div
               className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
-              dangerouslySetInnerHTML={{ __html: page.content }}
+              dangerouslySetInnerHTML={{ __html: parsedPageContent }}
             />
           </article>
         </main>
