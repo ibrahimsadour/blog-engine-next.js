@@ -8,6 +8,9 @@ export default async function Navbar() {
     await Promise.all([
       getSiteSettings(),
       db.category.findMany({
+        where: {
+          showInHeader: true, // <-- عرض التصنيفات المفعل إظهارها في الهيدر فقط
+        },
         take: 4,
         orderBy: { name: 'asc' },
       }),
@@ -46,7 +49,7 @@ export default async function Navbar() {
             الرئيسية
           </Link>
 
-          {/* التصنيفات */}
+          {/* التصنيفات المخصصة للظهور في الهيدر */}
           {categories.map((c) => (
             <Link
               key={c.id}

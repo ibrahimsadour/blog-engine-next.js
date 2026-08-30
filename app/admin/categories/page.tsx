@@ -32,6 +32,7 @@ export default async function AdminCategoriesPage() {
       const name = (formData.get('name') as string)?.trim() || '';
       const rawSlug = (formData.get('slug') as string)?.trim() || '';
       const description = (formData.get('description') as string)?.trim() || null;
+      const showInHeader = formData.get('showInHeader') === 'true'; // استقبال حالة إظهار الهيدر
 
       if (!name) {
         return { success: false, error: 'اسم التصنيف مطلوب' };
@@ -55,15 +56,15 @@ export default async function AdminCategoriesPage() {
       }
 
       if (id) {
-        // تحديث تصنيف حالي
+        // تحديث تصنيف حالي مع حقل showInHeader
         await db.category.update({
           where: { id },
-          data: { name, slug, description },
+          data: { name, slug, description, showInHeader },
         });
       } else {
-        // إنشاء تصنيف جديد
+        // إنشاء تصنيف جديد مع حقل showInHeader
         await db.category.create({
-          data: { name, slug, description },
+          data: { name, slug, description, showInHeader },
         });
       }
 

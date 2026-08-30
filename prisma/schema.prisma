@@ -26,6 +26,7 @@ model Category {
   id          String    @id @default(cuid())
   name        String
   slug        String    @unique
+  showInHeader  Boolean   @default(true) 
   description String?   @db.Text
   metaTitle   String?
   metaDesc    String?

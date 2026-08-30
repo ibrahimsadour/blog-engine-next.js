@@ -9,6 +9,7 @@ export interface CategoryEditData {
   name: string;
   slug: string;
   description: string | null;
+  showInHeader?: boolean;
 }
 
 interface CategoryFormProps {
@@ -22,6 +23,7 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
+  const [showInHeader, setShowInHeader] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // تحديث الحقول عند اختيار تصنيف للتعديل أو إلغاء التعديل
@@ -30,10 +32,12 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
       setName(editCategory.name || '');
       setSlug(editCategory.slug || '');
       setDescription(editCategory.description || '');
+      setShowInHeader(editCategory.showInHeader ?? true);
     } else {
       setName('');
       setSlug('');
       setDescription('');
+      setShowInHeader(true);
     }
   }, [editCategory]);
 
@@ -75,6 +79,7 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
     formData.set('name', name.trim());
     formData.set('slug', slug.trim().replace(/^-+|-+$/g, ''));
     formData.set('description', description.trim());
+    formData.set('showInHeader', showInHeader ? 'true' : 'false');
 
     setIsSubmitting(true);
     const toastId = toast.loading(editCategory ? 'جاري تحديث التصنيف...' : 'جاري إضافة التصنيف...');
@@ -89,6 +94,7 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
           setName('');
           setSlug('');
           setDescription('');
+          setShowInHeader(true);
         }
         if (onCancelEdit) onCancelEdit();
         router.refresh();
@@ -156,6 +162,20 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
             placeholder="وصف مختصر للتصنيف وخدماته..."
             className="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:outline-hidden"
           />
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <input
+            type="checkbox"
+            id="showInHeader"
+            name="showInHeader"
+            checked={showInHeader}
+            onChange={(e) => setShowInHeader(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+          <label htmlFor="showInHeader" className="text-sm font-bold text-gray-700 cursor-pointer">
+            إظهار التصنيف في شريط التنقل العلوي (الهيدر)
+          </label>
         </div>
 
         <button
