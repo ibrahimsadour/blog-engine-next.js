@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type Props = {
   params: Promise<{ slug: string; service: string }>;
@@ -363,11 +364,14 @@ export default async function CityServicePage({ params }: Props) {
 
       <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-4">
         {selectedImage && (
-          <div className="mb-6 overflow-hidden rounded-xl border">
-            <img
+          <div className="relative w-full h-[320px] md:h-[420px] mb-6 overflow-hidden rounded-xl border">
+            <Image
               src={selectedImage}
               alt={`${service.name} في ${city.name}`}
-              className="w-full h-auto max-h-[400px] object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 896px"
+              className="object-cover"
+              priority={true}
             />
           </div>
         )}
