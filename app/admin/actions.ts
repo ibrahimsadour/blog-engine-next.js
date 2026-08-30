@@ -193,8 +193,8 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   const faqTemplates = (formData.get('faqTemplates') as string) || '';
   const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
-  const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || null;
-  const metaDescTemplate = (formData.get('metaDescTemplate') as string) || null;
+  const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
+  const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
 
   const existing = await db.globalServiceTemplate.findFirst();
 

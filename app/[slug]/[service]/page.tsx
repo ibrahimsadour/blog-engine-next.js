@@ -51,12 +51,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const template = await db.globalServiceTemplate.findFirst();
 
-  const metaTitle = template?.metaTitleTemplate 
-    ? parseTemplate(template.metaTitleTemplate, city.name, service.name)
+  // بنك خيارات Meta Title
+  const metaTitleList = template?.metaTitleTemplate 
+    ? template.metaTitleTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+    : [];
+  const rawMetaTitle = getStableItem(metaTitleList, `metatitle-${citySlug}-${serviceSlug}`);
+  const metaTitle = rawMetaTitle 
+    ? parseTemplate(rawMetaTitle, city.name, service.name)
     : `${service.metaTitle || service.name} في ${city.name}`;
 
-  const metaDesc = template?.metaDescTemplate
-    ? parseTemplate(template.metaDescTemplate, city.name, service.name)
+  // بنك خيارات Meta Description
+  const metaDescList = template?.metaDescTemplate 
+    ? template.metaDescTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+    : [];
+  const rawMetaDesc = getStableItem(metaDescList, `metadesc-${citySlug}-${serviceSlug}`);
+  const metaDesc = rawMetaDesc
+    ? parseTemplate(rawMetaDesc, city.name, service.name)
     : service.metaDesc || `أفضل خدمات ${service.name} في ${city.name}.`;
 
   return {
@@ -90,8 +100,13 @@ export default async function CityServicePage({ params }: Props) {
 
   const template = await db.globalServiceTemplate.findFirst();
 
-  const pageTitle = template?.titleTemplate 
-    ? parseTemplate(template.titleTemplate, city.name, service.name) 
+  // بنك خيارات العنوان الرئيسي (H1)
+  const titleList = template?.titleTemplate 
+    ? template.titleTemplate.split('---').map(s => s.trim()).filter(Boolean) 
+    : [];
+  const rawTitle = getStableItem(titleList, `title-${citySlug}-${serviceSlug}`);
+  const pageTitle = rawTitle 
+    ? parseTemplate(rawTitle, city.name, service.name) 
     : `أفضل خدمات ${service.name} في ${city.name}`;
 
   const coreDescription = template?.descTemplate 

@@ -42,13 +42,15 @@ export default function ServiceTemplateForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">قالب العنوان الرئيسي (H1)</label>
-        <input 
-          type="text" 
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          بنك العناوين الرئيسية (H1) (افصل بين كل عنوان وأخر بـ <code className="bg-gray-100 text-blue-600 px-1 rounded">---</code>)
+        </label>
+        <textarea 
           name="titleTemplate" 
-          defaultValue={template?.titleTemplate || `أفضل خدمات {service} في {city}`} 
+          rows={3} 
+          defaultValue={template?.titleTemplate || `أفضل خدمات {service} في {city}\n---\nأرخص أسعار {service} داخل {city}`} 
           required 
-          className="w-full border rounded-lg p-2.5" 
+          className="w-full border rounded-lg p-2.5 text-sm" 
         />
       </div>
 
@@ -124,21 +126,25 @@ export default function ServiceTemplateForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">قالب ميتا تايتل (Meta Title)</label>
-          <input 
-            type="text" 
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            بنك (Meta Title) (افصل بين كل عنوان بـ <code className="bg-gray-100 text-blue-600 px-1 rounded">---</code>)
+          </label>
+          <textarea 
             name="metaTitleTemplate" 
-            defaultValue={template?.metaTitleTemplate || `{service} في {city} - أرخص الأسعار`} 
-            className="w-full border rounded-lg p-2.5" 
+            rows={3}
+            defaultValue={template?.metaTitleTemplate || `{service} في {city} - أرخص الأسعار\n---\nدليل خدمات {service} الشامل في {city}`} 
+            className="w-full border rounded-lg p-2.5 text-sm" 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">قالب وصف الميتا (Meta Description)</label>
-          <input 
-            type="text" 
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            بنك (Meta Description) (افصل بين كل وصف بـ <code className="bg-gray-100 text-blue-600 px-1 rounded">---</code>)
+          </label>
+          <textarea 
             name="metaDescTemplate" 
-            defaultValue={template?.metaDescTemplate || `احصل على أفضل خدمات {service} في {city} فوراً. اتصل بنا الآن.`} 
-            className="w-full border rounded-lg p-2.5" 
+            rows={3}
+            defaultValue={template?.metaDescTemplate || `احصل على أفضل خدمات {service} في {city} فوراً. اتصل بنا الآن.\n---\nنقدم لك أرقى خدمات {service} في {city} بجودة عالية وضمان شامل.`} 
+            className="w-full border rounded-lg p-2.5 text-sm" 
           />
         </div>
       </div>
