@@ -39,6 +39,47 @@ function getStableMultiple<T>(items: T[], seed: string, count: number = 3): T[] 
   return shuffled.slice(0, count);
 }
 
+// دالة توليد كلمات مفتاحية دقيقة وموطنة (بحد أقصى 8 كلمات)
+function generateLocalizedKeywords(
+  service: { name: string; keywords?: string | null },
+  cityName: string,
+  limit: number = 8
+): string {
+  const result: string[] = [];
+  const sName = service.name.trim();
+
+  // 1. عبارات نية البحث المباشرة
+  result.push(`${sName} ${cityName}`);
+  result.push(`${sName} في ${cityName}`);
+  result.push(`افضل ${sName} في ${cityName}`);
+  result.push(`ارخص ${sName} في ${cityName}`);
+  result.push(`خدمة ${sName} ${cityName}`);
+  result.push(`محل ${sName} ${cityName}`);
+
+  // 2. معالجة وتوطين كلمات الخدمة
+  if (service.keywords) {
+    const rawList = service.keywords
+      .split(/[,،\n]/)
+      .map((k) => k.trim())
+      .filter(Boolean);
+
+    for (const kw of rawList) {
+      if (kw.includes('الكويت')) {
+        result.push(kw.replace(/الكويت/g, cityName));
+      } else if (!kw.includes(cityName)) {
+        result.push(`${kw} ${cityName}`);
+      } else {
+        result.push(kw);
+      }
+    }
+  }
+
+  result.push(`${sName} الكويت`);
+
+  const uniqueKeywords = Array.from(new Set(result)).filter(Boolean);
+  return uniqueKeywords.slice(0, limit).join('، ');
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, service: serviceSlug } = await params;
 
@@ -48,6 +89,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]);
 
   if (!city || !service) return {};
+
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
+  const canonicalUrl = `${baseUrl}/${citySlug}/${serviceSlug}`;
 
   const template = await db.globalServiceTemplate.findFirst();
 
@@ -69,22 +113,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? parseTemplate(rawMetaDesc, city.name, service.name)
     : service.metaDesc || `أفضل خدمات ${service.name} في ${city.name}.`;
 
-  // بنك خيارات الصور (لتضمينها في الـ OpenGraph أو الميتا إن أردت)
+  // بنك خيارات الصور
   const imageList = template?.imageTemplates 
     ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
     : [];
   const rawImage = getStableItem(imageList, `image-${citySlug}-${serviceSlug}`);
   const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name) : '';
 
+  // الكلمات المفتاحية
+  const dynamicKeywords = generateLocalizedKeywords(service, city.name, 8);
+
   return {
     title: metaTitle,
     description: metaDesc,
-    keywords: `${service.keywords || ''}, ${city.keywords || ''}, ${service.name} ${city.name}`,
-    ...(selectedImage ? {
-      openGraph: {
-        images: [{ url: selectedImage }],
-      }
-    } : {}),
+    keywords: dynamicKeywords,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: metaTitle,
+      description: metaDesc,
+      url: canonicalUrl,
+      type: 'article',
+      ...(selectedImage ? { images: [{ url: selectedImage }] } : {}),
+    },
   };
 }
 
@@ -121,7 +173,7 @@ export default async function CityServicePage({ params }: Props) {
     ? parseTemplate(rawTitle, city.name, service.name) 
     : `أفضل خدمات ${service.name} في ${city.name}`;
 
-  // بنك خيارات الصور (Image Bank)
+  // بنك خيارات الصور
   const imageList = template?.imageTemplates 
     ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
     : [];

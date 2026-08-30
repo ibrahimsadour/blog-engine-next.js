@@ -8,8 +8,6 @@ import { Toaster } from 'sonner';
 
 export const dynamic = 'force-dynamic';
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-
 export const viewport: Viewport = {
   themeColor: '#2563eb',
   width: 'device-width',
@@ -17,51 +15,70 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: 'دليل الخدمات السريعة في الكويت',
-    template: '%s | دليل الخدمات',
-  },
-  description: 'دليل خدمات متكامل لصيانة وتبديل البطاريات وخدمات المساعدة على الطريق في الكويت على مدار 24 ساعة',
-  applicationName: 'دليل الخدمات',
-  authors: [{ name: 'فريق العمل' }],
-  generator: 'Next.js',
-  referrer: 'origin-when-cross-origin',
-  
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+  let siteName = '';
+  let siteTitle = '';
+  let siteDescription = '';
+
+  try {
+    const settings = await db.setting.findMany();
+    const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value?.trim() || '']));
+
+    siteName = settingsMap['site_name'] || settingsMap['siteName'] || '';
+    siteTitle = settingsMap['site_title'] || settingsMap['meta_title'] || siteName;
+    siteDescription = settingsMap['site_description'] || settingsMap['meta_description'] || '';
+  } catch {
+    // في حال عدم توفر الاتصال بقاعدة البيانات
+  }
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: siteTitle,
+      template: siteName ? `%s | ${siteName}` : '%s',
+    },
+    description: siteDescription,
+    applicationName: siteName,
+    authors: siteName ? [{ name: siteName }] : undefined,
+    generator: 'Next.js',
+    referrer: 'origin-when-cross-origin',
+
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
 
-  openGraph: {
-    type: 'website',
-    locale: 'ar_KW',
-    url: siteUrl,
-    siteName: 'دليل الخدمات',
-    title: 'دليل الخدمات السريعة في الكويت',
-    description: 'دليل خدمات متكامل لصيانة وتبديل البطاريات وخدمات المساعدة على الطريق في الكويت 24 ساعة',
-  },
+    openGraph: {
+      type: 'website',
+      locale: 'ar_KW',
+      url: siteUrl,
+      siteName: siteName || undefined,
+      title: siteTitle,
+      description: siteDescription,
+    },
 
-  twitter: {
-    card: 'summary_large_image',
-    title: 'دليل الخدمات السريعة في الكويت',
-    description: 'دليل خدمات متكامل لصيانة وتبديل البطاريات وخدمات المساعدة على الطريق في الكويت 24 ساعة',
-  },
+    twitter: {
+      card: 'summary_large_image',
+      title: siteTitle,
+      description: siteDescription,
+    },
 
-  formatDetection: {
-    email: false,
-    address: true,
-    telephone: true,
-  },
-};
+    formatDetection: {
+      email: false,
+      address: true,
+      telephone: true,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -74,7 +91,7 @@ export default async function RootLayout({
     const setting = await db.setting.findUnique({
       where: { key: 'custom_head_code' },
     });
-    headCode = setting?.value || '';
+    headCode = setting?.value?.trim() || '';
   } catch {
     // في حال عدم توفر الاتصال مؤقتاً
   }
