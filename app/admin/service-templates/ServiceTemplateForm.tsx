@@ -43,6 +43,20 @@ export default function ServiceTemplateForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
+          بنك الصور (ضع رابط كل صُورة في سطر أو افصل بينها بـ <code className="bg-gray-100 text-blue-600 px-1 rounded">---</code>)
+        </label>
+        <textarea 
+          name="imageTemplates" 
+          rows={4} 
+          defaultValue={template?.imageTemplates || ''} 
+          placeholder="/uploads/img1.jpg---/uploads/img2.jpg" 
+          className="w-full border rounded-lg p-2.5 text-sm" 
+        />
+      </div>
+
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           بنك العناوين الرئيسية (H1) (افصل بين كل عنوان وأخر بـ <code className="bg-gray-100 text-blue-600 px-1 rounded">---</code>)
         </label>
         <textarea 

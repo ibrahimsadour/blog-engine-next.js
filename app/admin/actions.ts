@@ -195,6 +195,7 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
   const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
   const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
+  const imageTemplates = (formData.get('imageTemplates') as string) || '';
 
   const existing = await db.globalServiceTemplate.findFirst();
 
@@ -208,6 +209,7 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
     testimonialTemplates,
     metaTitleTemplate,
     metaDescTemplate,
+    imageTemplates,
   };
 
   if (existing) {

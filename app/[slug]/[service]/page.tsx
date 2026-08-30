@@ -69,10 +69,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? parseTemplate(rawMetaDesc, city.name, service.name)
     : service.metaDesc || `أفضل خدمات ${service.name} في ${city.name}.`;
 
+  // بنك خيارات الصور (لتضمينها في الـ OpenGraph أو الميتا إن أردت)
+  const imageList = template?.imageTemplates 
+    ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
+    : [];
+  const rawImage = getStableItem(imageList, `image-${citySlug}-${serviceSlug}`);
+  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name) : '';
+
   return {
     title: metaTitle,
     description: metaDesc,
     keywords: `${service.keywords || ''}, ${city.keywords || ''}, ${service.name} ${city.name}`,
+    ...(selectedImage ? {
+      openGraph: {
+        images: [{ url: selectedImage }],
+      }
+    } : {}),
   };
 }
 
@@ -108,6 +120,13 @@ export default async function CityServicePage({ params }: Props) {
   const pageTitle = rawTitle 
     ? parseTemplate(rawTitle, city.name, service.name) 
     : `أفضل خدمات ${service.name} في ${city.name}`;
+
+  // بنك خيارات الصور (Image Bank)
+  const imageList = template?.imageTemplates 
+    ? template.imageTemplates.split('---').map(s => s.trim()).filter(Boolean) 
+    : [];
+  const rawImage = getStableItem(imageList, `image-${citySlug}-${serviceSlug}`);
+  const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name) : '';
 
   const coreDescription = template?.descTemplate 
     ? parseTemplate(template.descTemplate, city.name, service.name) 
@@ -210,6 +229,15 @@ export default async function CityServicePage({ params }: Props) {
       )}
 
       <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-4">
+        {selectedImage && (
+          <div className="mb-6 overflow-hidden rounded-xl border">
+            <img 
+              src={selectedImage} 
+              alt={`${service.name} في ${city.name}`} 
+              className="w-full h-auto max-h-[400px] object-cover"
+            />
+          </div>
+        )}
         <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">
           {pageTitle}
         </h1>

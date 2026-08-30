@@ -173,6 +173,7 @@ model GlobalServiceTemplate {
   testimonialTemplates  String?  @db.Text // بنك التقييمات والآراء المحلية
   metaTitleTemplate String?  @db.Text
   metaDescTemplate  String?  @db.Text
+  imageTemplates    String?  @db.Text // <-- بنك الصور الجديد
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
