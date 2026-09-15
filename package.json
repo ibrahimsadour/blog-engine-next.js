@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "db:check": "node scripts/check-database-url.mjs",
+    "db:migrate:deploy": "npm run db:check && prisma migrate deploy",
+    "deploy": "npm run db:migrate:deploy && npm run build"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

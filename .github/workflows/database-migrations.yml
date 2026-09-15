@@ -1,0 +1,108 @@
+name: Database migrations
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/database-migrations.yml'
+      - 'lib/database-url.ts'
+      - 'package.json'
+      - 'prisma/**'
+      - 'scripts/**'
+  push:
+    branches:
+      - fix/signed-admin-session
+    paths:
+      - '.github/workflows/database-migrations.yml'
+      - 'lib/database-url.ts'
+      - 'package.json'
+      - 'prisma/**'
+      - 'scripts/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: migration-test-password
+          MYSQL_DATABASE: fresh_migration_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pmigration-test-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      FRESH_DATABASE_URL: mysql://root:migration-test-password@127.0.0.1:3306/fresh_migration_test
+      LEGACY_DATABASE_URL: mysql://root:migration-test-password@127.0.0.1:3306/legacy_migration_test
+      SERVER_DATABASE_URL: mysql://root:migration-test-password@127.0.0.1:3306/mysql
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies and generate Prisma Client
+        run: npm ci
+
+      - name: Apply all migrations to a fresh database
+        run: npm run db:migrate:deploy
+        env:
+          DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
+
+      - name: Verify fresh database matches schema.prisma
+        run: |
+          npx prisma migrate diff \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
+            --exit-code
+          node scripts/verify-migrated-database.mjs
+        env:
+          DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
+
+      - name: Create a representative legacy database
+        run: |
+          printf '%s\n' 'CREATE DATABASE `legacy_migration_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' \
+            | DATABASE_URL="$SERVER_DATABASE_URL" npx prisma db execute --stdin
+          DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma db execute \
+            --file prisma/migrations/20260823142054_init_service_schema/migration.sql
+          DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma db execute \
+            --file prisma/migrations/20260915101500_add_login_rate_limit/migration.sql
+          DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma migrate resolve \
+            --applied 20260823142054_init_service_schema
+          DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma migrate resolve \
+            --applied 20260915101500_add_login_rate_limit
+
+      - name: Seed legacy rows before migration
+        run: |
+          printf '%s\n' \
+            "INSERT INTO \`Category\` (\`id\`,\`name\`,\`slug\`,\`createdAt\`,\`updatedAt\`) VALUES ('category-1','Legacy','legacy',NOW(3),NOW(3));" \
+            "INSERT INTO \`Article\` (\`id\`,\`title\`,\`slug\`,\`content\`,\`categoryId\`,\`createdAt\`,\`updatedAt\`) VALUES ('article-1','Legacy article','legacy-article','Content','category-1',NOW(3),NOW(3));" \
+            "INSERT INTO \`Redirect\` (\`id\`,\`source\`,\`destination\`,\`permanent\`,\`createdAt\`) VALUES ('redirect-1','/legacy-permanent','/new-permanent',true,NOW(3)),('redirect-2','/legacy-temporary','/new-temporary',false,NOW(3));" \
+            "INSERT INTO \`LoginRateLimit\` (\`key\`,\`attempts\`,\`windowStartedAt\`,\`updatedAt\`) VALUES ('legacy-client',2,NOW(3),NOW(3));" \
+            | DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma db execute --stdin
+          DATABASE_URL="$LEGACY_DATABASE_URL" node scripts/database-row-counts.mjs > /tmp/counts-before.json
+
+      - name: Migrate the legacy database without data loss
+        run: npm run db:migrate:deploy
+        env:
+          DATABASE_URL: ${{ env.LEGACY_DATABASE_URL }}
+
+      - name: Verify legacy rows and final schema
+        run: |
+          node scripts/database-row-counts.mjs > /tmp/counts-after.json
+          diff -u /tmp/counts-before.json /tmp/counts-after.json
+          node scripts/verify-migrated-database.mjs
+          npx prisma migrate diff \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
+            --exit-code
+        env:
+          DATABASE_URL: ${{ env.LEGACY_DATABASE_URL }}
+          EXPECT_LEGACY_FIXTURE: '1'
