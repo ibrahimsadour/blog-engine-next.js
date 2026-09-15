@@ -11,6 +11,7 @@ import {
   createLoginRateLimitKey,
   recordFailedLogin,
 } from '@/lib/auth/login-rate-limit';
+import { verifyAdminPassword } from '@/lib/auth/password';
 
 export default async function LoginPage({
   searchParams,
@@ -31,10 +32,10 @@ export default async function LoginPage({
       redirect(`/login?error=rate-limited&retry=${currentLimit.retryAfterSeconds}`);
     }
 
-    const password = formData.get('password') as string;
+    const password = formData.get('password');
     const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (!adminPassword || password !== adminPassword) {
+    if (!verifyAdminPassword(password, adminPassword)) {
       const failedLimit = await recordFailedLogin(clientKey);
       if (failedLimit.limited) {
         redirect(`/login?error=rate-limited&retry=${failedLimit.retryAfterSeconds}`);
@@ -79,6 +80,7 @@ export default async function LoginPage({
               type="password"
               name="password"
               required
+              maxLength={4096}
               placeholder="••••••••••••"
               className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
             />
