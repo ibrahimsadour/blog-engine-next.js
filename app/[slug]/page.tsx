@@ -24,7 +24,6 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// دالة معالجة المتغيرات واستبدال كافة صيغ رقم الهاتف واسم الموقع
 function parseContentVariables(
   content: string, 
   phone: string = '', 
@@ -82,7 +81,6 @@ function injectHeadingIds(html: string): {
   return { htmlWithIds, headings };
 }
 
-// دالة جلب إعدادات الموقع وتغطية مفتاح phone_number بدقة
 async function getSiteConfig() {
   try {
     const settings = await db.setting.findMany();
@@ -119,7 +117,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { phone, siteName } = await getSiteConfig();
 
-  // 1. التحقق من المدن أولاً
+  // 1. التحقق من المدن
   const city = await db.city.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -137,6 +135,35 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       keywords: city.keywords || undefined,
       alternates: {
         canonical: `${siteUrl}/${city.slug}`,
+      },
+    };
+  }
+
+  // 1.5. التحقق من السيارات
+  const car = await db.car.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      isActive: true,
+    },
+  });
+
+  if (car) {
+    const title = parseContentVariables(car.metaTitle || `خدمات صيانة وإصلاح سيارات ${car.name}`, phone, siteName);
+    const description = parseContentVariables(car.metaDesc || car.description || `استعرض جميع خدمات الصيانة والإصلاح المتوفرة لسيارات ${car.name}.`, phone, siteName);
+
+    return {
+      title,
+      description,
+      keywords: car.keywords || undefined,
+      alternates: {
+        canonical: `${siteUrl}/${car.slug}`,
+      },
+      openGraph: {
+        title,
+        description,
+        url: `${siteUrl}/${car.slug}`,
+        type: 'website',
+        ...(car.image ? { images: [{ url: car.image }] } : {}),
       },
     };
   }
@@ -314,6 +341,76 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     );
   }
 
+  // 1.5. فحص ما إذا كان الـ slug يعود لسيارة (Car)
+  const car = await db.car.findFirst({
+    where: {
+      OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      isActive: true,
+    },
+  });
+
+  if (car) {
+    const services = await db.service.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const breadcrumbItems = [
+      { name: 'الرئيسية', url: '/' },
+      { name: 'السيارات', url: '/cars' },
+      { name: car.name, url: `/${car.slug}` },
+    ];
+    const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        />
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12" dir="rtl">
+          <div className="mx-auto max-w-4xl space-y-8">
+            <Breadcrumbs items={breadcrumbItems} />
+
+            <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-4">
+              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">
+                خدمات صيانة وإصلاح سيارات {car.name}
+              </h1>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                {parseContentVariables(car.description || `نقدم لك أفضل خدمات الصيانة والإصلاح لسيارات ${car.name} بجودة عالية وضمان شامل.`, phone, siteName)}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {services.map((service) => (
+                <Link
+                  key={service.id}
+                  href={`/${car.slug}/${service.slug}`}
+                  className="bg-white p-6 rounded-xl border shadow-sm hover:border-blue-500 hover:shadow-md transition block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {service.name} {car.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm line-clamp-2">
+                    {parseContentVariables(service.description || `أفضل خدمات ${service.name} لسيارات ${car.name} بجودة عالية.`, phone, siteName)}
+                  </p>
+                  <span className="inline-block text-blue-600 text-sm font-bold pt-2">عرض التفاصيل والطلب ←</span>
+                </Link>
+              ))}
+            </div>
+
+            {services.length === 0 && (
+              <div className="bg-white p-8 rounded-xl text-center text-gray-500">
+                لا توجد خدمات متاحة حالياً لهذه السيارة.
+              </div>
+            )}
+          </div>
+        </main>
+        <StickyFloatingBar />
+      </>
+    );
+  }
+
   // 2. فحص ما إذا كان الـ slug يعود لمقال (Article)
   const article = await db.article.findFirst({
     where: {
@@ -372,7 +469,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
     const pageUrl = `${siteUrl}/${article.slug}`;
 
-    // معالجة نصوص المقال والأسئلة الشائعة بالمتغيرات الديناميكية
     const parsedTitle = parseContentVariables(article.title, phone, siteName);
     const parsedExcerpt = article.excerpt ? parseContentVariables(article.excerpt, phone, siteName) : '';
     const parsedMetaDesc = article.metaDesc ? parseContentVariables(article.metaDesc, phone, siteName) : undefined;

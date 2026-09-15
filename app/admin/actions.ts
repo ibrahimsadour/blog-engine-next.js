@@ -225,3 +225,78 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
 
   revalidatePath('/admin/service-templates');
 }
+export async function saveCarServiceContentAction(formData: FormData) {
+  const carId = (formData.get('carId') as string) || '';
+  const serviceId = (formData.get('serviceId') as string) || '';
+  const customTitle = (formData.get('customTitle') as string) || null;
+  const customDescription = (formData.get('customDescription') as string) || null;
+  const metaTitle = (formData.get('metaTitle') as string) || null;
+  const metaDesc = (formData.get('metaDesc') as string) || null;
+
+  if (!carId || !serviceId) {
+    throw new Error('الرجاء تحديد السيارة والخدمة');
+  }
+
+  await db.carServiceContent.upsert({
+    where: {
+      carId_serviceId: { carId, serviceId },
+    },
+    update: {
+      customTitle,
+      customDescription,
+      metaTitle,
+      metaDesc,
+    },
+    create: {
+      carId,
+      serviceId,
+      customTitle,
+      customDescription,
+      metaTitle,
+      metaDesc,
+    },
+  });
+
+  revalidatePath('/admin/car-services');
+}
+
+export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
+  const titleTemplate = (formData.get('titleTemplate') as string) || '';
+  const descTemplate = (formData.get('descTemplate') as string) || '';
+  const introTemplates = (formData.get('introTemplates') as string) || '';
+  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const faqTemplates = (formData.get('faqTemplates') as string) || '';
+  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
+  const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
+  const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
+  const imageTemplates = (formData.get('imageTemplates') as string) || '';
+
+  const existing = await db.globalCarServiceTemplate.findFirst();
+
+  const payload = {
+    titleTemplate,
+    descTemplate,
+    introTemplates,
+    outroTemplates,
+    faqTemplates,
+    neighborhoodTemplates,
+    testimonialTemplates,
+    metaTitleTemplate,
+    metaDescTemplate,
+    imageTemplates,
+  };
+
+  if (existing) {
+    await db.globalCarServiceTemplate.update({
+      where: { id: existing.id },
+      data: payload,
+    });
+  } else {
+    await db.globalCarServiceTemplate.create({
+      data: payload,
+    });
+  }
+
+  revalidatePath('/admin/car-service-templates');
+}

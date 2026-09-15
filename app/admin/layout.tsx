@@ -73,6 +73,16 @@ export default function AdminLayout({
                 <span>السيارات</span>
               </Link>
 
+
+
+              <Link
+                href="/admin/car-service-templates"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>🚘</span>
+                <span>قوالب الخدمات والسيارات</span>
+              </Link>
+
               <Link
                 href="/admin/services"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"

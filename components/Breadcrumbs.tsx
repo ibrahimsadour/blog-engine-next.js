@@ -10,6 +10,11 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
+  // استبعاد أي عنصر مكرر للرئيسية ممرر في المصفوفة
+  const filteredItems = items.filter(
+    (item) => item.url !== '/' && item.name.trim() !== 'الرئيسية'
+  );
+
   return (
     <nav aria-label="Breadcrumb" className="py-3 text-sm text-gray-500">
       <ol className="flex flex-wrap items-center gap-2">
@@ -18,11 +23,11 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             الرئيسية
           </Link>
         </li>
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1;
+        {filteredItems.map((item, index) => {
+          const isLast = index === filteredItems.length - 1;
 
           return (
-            <li key={item.url} className="flex items-center gap-2">
+            <li key={`${item.url}-${index}`} className="flex items-center gap-2">
               <span className="select-none text-gray-400">/</span>
               {isLast ? (
                 <span className="font-semibold text-gray-900" aria-current="page">
