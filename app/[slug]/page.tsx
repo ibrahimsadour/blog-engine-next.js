@@ -7,7 +7,6 @@ import {
   generateArticleSchema,
   generateFaqSchema,
   generateBreadcrumbSchema,
-  generateLocalBusinessSchema,
 } from '@/lib/schema';
 import { injectInternalLinks, InternalLinkRule } from '@/lib/internal-links';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -18,6 +17,7 @@ import RelatedArticles from '@/components/RelatedArticles';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { isAdminAuthenticated } from '@/lib/auth/authorization';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
+import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
 
 export const revalidate = 3600;
 
@@ -114,8 +114,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
-
+  const siteUrl = getSiteUrl();
   const { phone, siteName } = await getSiteConfig();
 
   // 1. التحقق من المدن
@@ -135,7 +134,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: city.keywords || undefined,
       alternates: {
-        canonical: `${siteUrl}/${city.slug}`,
+        canonical: buildSiteUrl(city.slug),
       },
     };
   }
@@ -157,7 +156,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: car.keywords || undefined,
       alternates: {
-        canonical: `${siteUrl}/${car.slug}`,
+        canonical: buildSiteUrl(car.slug),
       },
       openGraph: {
         title,
@@ -170,22 +169,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 2. التحقق من المقالات
-  const isAdmin = await isAdminAuthenticated();
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
-      ...(isAdmin ? {} : { isPublished: true }),
+      isPublished: true,
     },
     include: { category: true },
   });
 
   if (article) {
-    const url = `${siteUrl}/${article.slug}`;
+    const url = buildSiteUrl(article.slug);
     const ogImageUrl = article.featuredImage
       ? article.featuredImage.startsWith('http')
         ? article.featuredImage
         : `${siteUrl}${article.featuredImage}`
-      : undefined;
+      : `${siteUrl}/images/og-default.jpg`;
 
     const rawTitle = article.metaTitle || article.title;
     const rawDesc = article.metaDesc || article.excerpt || undefined;
@@ -201,7 +199,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: keywordsValue,
       alternates: {
-        canonical: article.canonicalUrl || url,
+        canonical: trustedCanonicalUrl(article.canonicalUrl, `/${article.slug}`),
       },
       robots: {
         index: !article.noIndex,
@@ -220,16 +218,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url,
         type: 'article',
         locale: 'ar_KW',
-        publishedTime: article.createdAt.toISOString(),
+        publishedTime: (article.publishedAt || article.createdAt).toISOString(),
         modifiedTime: article.updatedAt.toISOString(),
         section: article.category?.name || 'خدمات',
-        images: ogImageUrl ? [{ url: ogImageUrl }] : [],
+        images: [{ url: ogImageUrl }],
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description,
-        images: ogImageUrl ? [ogImageUrl] : [],
+        images: [ogImageUrl],
       },
     };
   }
@@ -249,7 +247,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       alternates: {
-        canonical: `${siteUrl}/${page.slug}`,
+        canonical: buildSiteUrl(page.slug),
       },
       robots: {
         index: !page.noIndex,
@@ -269,7 +267,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const decodedSlug = decodeURIComponent(rawSlug).trim();
 
   const isAdmin = await isAdminAuthenticated();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
 
   const { phone, siteName } = await getSiteConfig();
 
@@ -469,7 +466,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       take: 3,
     });
 
-    const pageUrl = `${siteUrl}/${article.slug}`;
+    const pageUrl = buildSiteUrl(article.slug);
 
     const parsedTitle = parseContentVariables(article.title, phone, siteName);
     const parsedExcerpt = article.excerpt ? parseContentVariables(article.excerpt, phone, siteName) : '';
@@ -483,18 +480,12 @@ export default async function DynamicSlugPage({ params }: PageProps) {
         metaDescription: parsedMetaDesc,
         featuredImage: article.featuredImage,
         createdAt: article.createdAt,
+        publishedAt: article.publishedAt,
         updatedAt: article.updatedAt,
         author: article.author ? { name: article.author.name } : null,
       },
       pageUrl
     );
-
-    const localBusinessSchema = generateLocalBusinessSchema({
-      name: parsedTitle,
-      description: parsedMetaDesc || parsedExcerpt || undefined,
-      areaServed: article.targetArea || 'الكويت',
-      url: pageUrl,
-    });
 
     const breadcrumbItems = [
       ...(article.category ? [{ name: article.category.name, url: `/category/${article.category.slug}` }] : []),
@@ -514,15 +505,11 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
     return (
       <>
-        {!article.noIndex && (
+        {article.isPublished && !article.noIndex && (
           <>
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
-            />
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }}
             />
             <script
               type="application/ld+json"
@@ -573,8 +560,8 @@ export default async function DynamicSlugPage({ params }: PageProps) {
                     {article.category.name}
                   </span>
                 )}
-                <time dateTime={article.createdAt.toISOString()}>
-                  {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                <time dateTime={(article.publishedAt || article.createdAt).toISOString()}>
+                  {new Date(article.publishedAt || article.createdAt).toLocaleDateString('ar-EG', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',

@@ -1,7 +1,9 @@
+import { getSiteUrl } from './site-url';
+
 export const siteConfig = {
   name: 'دليل الخدمات السريعة',
   description: 'دليل شامل لأفضل وأسرع خدمات الصيانة والمساعدة على الطريق في الكويت على مدار 24 ساعة.',
-  url: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  url: getSiteUrl(),
   ogImage: '/images/og-default.jpg',
   locale: 'ar_KW',
   twitterHandle: '@site_handle',

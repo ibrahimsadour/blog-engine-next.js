@@ -1,5 +1,17 @@
 import { db } from '@/lib/db';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { buildSiteUrl } from '@/lib/site-url';
+
+export const revalidate = 3600;
+
+export function generateMetadata(): Metadata {
+  return {
+    title: 'دليل المدن ومناطق الخدمة',
+    description: 'تصفح المدن والمناطق التي تتوفر فيها خدمات الصيانة والمساعدة.',
+    alternates: { canonical: buildSiteUrl('cities') },
+  };
+}
 
 export default async function CitiesPage() {
   const cities = await db.city.findMany({

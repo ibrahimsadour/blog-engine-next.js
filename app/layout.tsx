@@ -6,6 +6,7 @@ import AdminBar from '@/components/AdminBar';
 import { db } from '@/lib/db';
 import { Toaster } from 'sonner';
 import { sanitizeCustomHeadCode } from '@/lib/security/content';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
   let siteName = '';
   let siteTitle = '';
@@ -65,12 +66,14 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: siteName || undefined,
       title: siteTitle,
       description: siteDescription,
+      images: [{ url: `${siteUrl}/images/og-default.jpg`, width: 1200, height: 630 }],
     },
 
     twitter: {
       card: 'summary_large_image',
       title: siteTitle,
       description: siteDescription,
+      images: [`${siteUrl}/images/og-default.jpg`],
     },
 
     formatDetection: {

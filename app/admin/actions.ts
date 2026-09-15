@@ -186,6 +186,7 @@ export async function saveCityServiceContentAction(formData: FormData) {
   });
 
   revalidatePath('/admin/city-services');
+  revalidatePath('/city-service-sitemap.xml');
   const [city, service] = await Promise.all([
     db.city.findUnique({ where: { id: cityId }, select: { slug: true } }),
     db.service.findUnique({ where: { id: serviceId }, select: { slug: true } }),
@@ -234,6 +235,7 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   }
 
   revalidatePath('/admin/service-templates');
+  revalidatePath('/city-service-sitemap.xml');
 }
 export async function saveCarServiceContentAction(formData: FormData) {
   await requireAdminAction();
@@ -262,6 +264,7 @@ export async function saveCarServiceContentAction(formData: FormData) {
   });
 
   revalidatePath('/admin/car-services');
+  revalidatePath('/car-service-sitemap.xml');
   const [car, service] = await Promise.all([
     db.car.findUnique({ where: { id: carId }, select: { slug: true } }),
     db.service.findUnique({ where: { id: serviceId }, select: { slug: true } }),
@@ -310,4 +313,5 @@ export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
   }
 
   revalidatePath('/admin/car-service-templates');
+  revalidatePath('/car-service-sitemap.xml');
 }

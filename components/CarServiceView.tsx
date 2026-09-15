@@ -169,19 +169,6 @@ export default function CarServiceView({
       "name": siteName || "أوتو كراج",
       ...(phone ? { "telephone": phone } : {}),
     },
-    ...(selectedTestimonials.length > 0 ? {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "reviewCount": selectedTestimonials.length.toString(),
-      },
-      "review": selectedTestimonials.map((t) => ({
-        "@type": "Review",
-        "author": { "@type": "Person", "name": t.name },
-        "reviewRating": { "@type": "Rating", "ratingValue": "5" },
-        "reviewBody": t.comment,
-      })),
-    } : {}),
   };
 
   return (

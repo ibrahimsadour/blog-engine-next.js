@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import CityServiceView from '@/components/CityServiceView';
 import CarServiceView from '@/components/CarServiceView';
+import { buildSiteUrl } from '@/lib/site-url';
 
 type Props = {
   params: Promise<{ slug: string; service: string }>;
@@ -115,8 +116,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const isCar = Boolean(car);
   const targetName = isCar ? car!.name : city!.name;
   const { phone, siteName } = await getSiteConfig();
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
-  const canonicalUrl = `${baseUrl}/${slug}/${serviceSlug}`;
+  const canonicalUrl = buildSiteUrl(slug, serviceSlug);
 
   // فحص المحتوى المخصص المدخل يدوياً أولاً
   const customContent = isCar

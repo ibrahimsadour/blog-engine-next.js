@@ -16,7 +16,8 @@ export const CONTENT_LIMITS = {
 
 const RESERVED_TOP_LEVEL_SLUGS = new Set([
   'admin', 'api', 'login', 'cars', 'cities', 'category', 'robots.txt', 'sitemap.xml',
-  'post-sitemap.xml', 'page-sitemap.xml', 'category-sitemap.xml', 'city-service-sitemap.xml',
+  'post-sitemap.xml', 'page-sitemap.xml', 'category-sitemap.xml', 'directory-sitemap.xml',
+  'city-service-sitemap.xml', 'car-service-sitemap.xml',
 ]);
 
 export class InputValidationError extends Error {

@@ -5,20 +5,20 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const [cities, services, template] = await Promise.all([
-    db.city.findMany({
+  const [cars, services, template] = await Promise.all([
+    db.car.findMany({
       where: { isActive: true },
-      select: { slug: true, updatedAt: true, cityServices: { select: { serviceId: true, updatedAt: true } } },
+      select: { slug: true, updatedAt: true, carServices: { select: { serviceId: true, updatedAt: true } } },
     }),
     db.service.findMany({ where: { isActive: true }, select: { id: true, slug: true, updatedAt: true } }),
-    db.globalServiceTemplate.findFirst({ select: { updatedAt: true } }),
+    db.globalCarServiceTemplate.findFirst({ select: { updatedAt: true } }),
   ]);
 
-  const entries = cities.flatMap((city) => services.map((service) => {
-    const custom = city.cityServices.find((item) => item.serviceId === service.id);
+  const entries = cars.flatMap((car) => services.map((service) => {
+    const custom = car.carServices.find((item) => item.serviceId === service.id);
     return sitemapUrlEntry(
-      buildSiteUrl(city.slug, service.slug),
-      latestDate(city.updatedAt, service.updatedAt, template?.updatedAt, custom?.updatedAt),
+      buildSiteUrl(car.slug, service.slug),
+      latestDate(car.updatedAt, service.updatedAt, template?.updatedAt, custom?.updatedAt),
       '0.8',
     );
   }));

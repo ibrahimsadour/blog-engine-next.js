@@ -6,12 +6,13 @@ import { getSiteSettings } from '@/lib/settings';
 import CallToAction from '@/components/CallToAction';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
   const title = settings.homeMetaTitle || `${settings.siteName} | أسرع دليل خدمات وصيانة ميدانية 24 ساعة`;
   const description = settings.homeMetaDesc || settings.footerDescription || 'دليل خدمات وصيانة متكامل في الكويت على مدار الساعة بأفضل الأسعار.';
@@ -37,13 +38,13 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       locale: 'ar_KW',
       siteName: settings.siteName,
-      images: settings.heroBgImage ? [{ url: settings.heroBgImage }] : [],
+      images: [{ url: settings.heroBgImage || `${siteUrl}/images/og-default.jpg` }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: settings.heroBgImage ? [settings.heroBgImage] : [],
+      images: [settings.heroBgImage || `${siteUrl}/images/og-default.jpg`],
     },
   };
 }
@@ -67,7 +68,7 @@ export default async function HomePage() {
     }),
   ]);
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
   // 1. WebSite Schema
   const websiteSchema = {
@@ -257,8 +258,8 @@ export default async function HomePage() {
                         </p>
                       )}
                       <div className="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-400">
-                        <time dateTime={article.createdAt.toISOString()}>
-                          {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                        <time dateTime={(article.publishedAt || article.createdAt).toISOString()}>
+                          {new Date(article.publishedAt || article.createdAt).toLocaleDateString('ar-EG', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

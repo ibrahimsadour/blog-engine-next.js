@@ -160,7 +160,7 @@ export default function CityServiceView({
     })),
   } : null;
 
-  const reviewSchema = selectedTestimonials.length > 0 ? {
+  const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
     "name": `${service.name} في ${city.name}`,
@@ -170,18 +170,7 @@ export default function CityServiceView({
       ...(phone ? { "telephone": phone } : {}),
     },
     "areaServed": { "@type": "AdministrativeArea", "name": city.name },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": selectedTestimonials.length.toString(),
-    },
-    "review": selectedTestimonials.map((t) => ({
-      "@type": "Review",
-      "author": { "@type": "Person", "name": t.name },
-      "reviewRating": { "@type": "Rating", "ratingValue": "5" },
-      "reviewBody": t.comment,
-    })),
-  } : null;
+  };
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
@@ -192,9 +181,7 @@ export default function CityServiceView({
       {faqSchema && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
       )}
-      {reviewSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(reviewSchema) }} />
-      )}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceSchema) }} />
 
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
         {selectedImage && (

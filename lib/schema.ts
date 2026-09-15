@@ -1,4 +1,5 @@
 import { siteConfig } from './site-config';
+import { getSiteUrl, trustedCanonicalUrl } from './site-url';
 
 interface ArticleData {
   title: string;
@@ -6,6 +7,7 @@ interface ArticleData {
   metaDescription?: string | null;
   featuredImage?: string | null;
   createdAt: Date;
+  publishedAt?: Date | null;
   updatedAt: Date;
   author?: {
     name: string;
@@ -22,19 +24,11 @@ interface BreadcrumbItem {
   url: string;
 }
 
-interface LocalBusinessData {
-  name: string;
-  description?: string;
-  telephone?: string;
-  areaServed?: string;
-  url?: string;
-}
-
 // 1. Article / BlogPosting Schema
 export function generateArticleSchema(article: ArticleData, url: string) {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = getSiteUrl();
   
-  let imageUrl = siteConfig.ogImage;
+  let imageUrl = `${baseUrl}${siteConfig.ogImage}`;
   if (article.featuredImage) {
     imageUrl = article.featuredImage.startsWith('http')
       ? article.featuredImage
@@ -48,11 +42,11 @@ export function generateArticleSchema(article: ArticleData, url: string) {
     description: article.metaDescription || article.excerpt || article.title,
     image: [imageUrl],
     inLanguage: 'ar',
-    datePublished: article.createdAt.toISOString(),
+    datePublished: (article.publishedAt || article.createdAt).toISOString(),
     dateModified: article.updatedAt.toISOString(),
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': url,
+      '@id': trustedCanonicalUrl(url, '/'),
     },
     author: {
       '@type': 'Person',
@@ -88,7 +82,7 @@ export function generateFaqSchema(faqs: FaqItem[]) {
 
 // 3. Breadcrumb Schema
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = getSiteUrl();
 
   const itemListElement = [
     {
@@ -98,9 +92,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
       item: baseUrl,
     },
     ...items.map((item, index) => {
-      const targetUrl = item.url.startsWith('http')
-        ? item.url
-        : `${baseUrl}${item.url.startsWith('/') ? item.url : `/${item.url}`}`;
+      const targetUrl = trustedCanonicalUrl(item.url, '/');
 
       return {
         '@type': 'ListItem',
@@ -115,29 +107,5 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement,
-  };
-}
-
-// 4. Local Business Schema (لتعزيز السيو المحلي)
-export function generateLocalBusinessSchema(data: LocalBusinessData) {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url || 'http://localhost:3000').replace(/\/$/, '');
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'AutoRepair',
-    name: data.name || siteConfig.name,
-    description: data.description || siteConfig.description,
-    url: data.url || baseUrl,
-    telephone: data.telephone || '',
-    areaServed: {
-      '@type': 'AdministrativeArea',
-      name: data.areaServed || 'الكويت',
-    },
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'KW',
-      addressRegion: data.areaServed || 'الكويت',
-    },
-    priceRange: '$$',
   };
 }
