@@ -1,76 +1,46 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
-import { isSpreadsheetImportError, readXlsxRows } from '@/lib/import-spreadsheet';
+import { assertTopLevelSlugAvailable, publicError, validateDirectoryInput } from '@/lib/content-input';
+import { validateDirectoryRows } from '@/lib/directory-import';
+import { readXlsxRows } from '@/lib/import-spreadsheet';
+import { revalidateDirectory } from '@/lib/revalidate-directory';
 
 export async function GET() {
   try {
-    const cities = await db.city.findMany({ orderBy: { sortOrder: 'asc' } });
-    return NextResponse.json(cities);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch cities' }, { status: 500 });
+    return NextResponse.json(await db.city.findMany({ orderBy: { sortOrder: 'asc' } }));
+  } catch {
+    return NextResponse.json({ error: 'تعذر جلب المدن', code: 'DATABASE_ERROR' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
-
   try {
-    const contentType = request.headers.get('content-type') || '';
-    
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      const file = formData.get('file') as File;
-      if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-
-      const rows = await readXlsxRows(file);
-
-      let importedCount = 0;
-      for (const row of rows) {
-        const name = row.name || row.Name || row.المدينة;
-        const slug = row.slug || row.Slug || row.الرابط;
-        if (!name || !slug) continue;
-
-        await db.city.upsert({
-          where: { slug: String(slug) },
-          update: {
-            name: String(name),
-            description: row.description || row.Description || row.الوصف || '',
-            metaTitle: row.metaTitle || row.MetaTitle || row.عنوان_السييو || '',
-            metaDesc: row.metaDesc || row.MetaDesc || row.وصف_السييو || '',
-            keywords: row.keywords || row.Keywords || row.الكلمات_المفتاحية || '',
-          },
-          create: {
-            name: String(name),
-            slug: String(slug),
-            description: row.description || row.Description || row.الوصف || '',
-            metaTitle: row.metaTitle || row.MetaTitle || row.عنوان_السييو || '',
-            metaDesc: row.metaDesc || row.MetaDesc || row.وصف_السييو || '',
-            keywords: row.keywords || row.Keywords || row.الكلمات_المفتاحية || '',
-          },
-        });
-        importedCount++;
-      }
-
-      return NextResponse.json({ success: true, count: importedCount });
+    if ((request.headers.get('content-type') || '').includes('multipart/form-data')) {
+      const file = (await request.formData()).get('file');
+      if (!(file instanceof File)) return NextResponse.json({ error: 'ملف Excel مطلوب', code: 'FILE_REQUIRED' }, { status: 400 });
+      const items = validateDirectoryRows(await readXlsxRows(file), 'المدينة', true);
+      await db.$transaction(async (tx) => {
+        for (const item of items) {
+          const existing = await tx.city.findUnique({ where: { slug: item.slug }, select: { id: true } });
+          await assertTopLevelSlugAvailable(tx, item.slug, existing ? { owner: 'city', id: existing.id } : undefined);
+          await tx.city.upsert({ where: { slug: item.slug }, update: item, create: item });
+        }
+      });
+      revalidateDirectory('city');
+      return NextResponse.json({ success: true, count: items.length });
     }
-
-    const body = await request.json();
-    const { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive } = body;
-
-    if (!name || !slug) {
-      return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
-    }
-
-    const city = await db.city.create({
-      data: { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive },
+    const input = validateDirectoryInput(await request.json(), { topLevel: true });
+    const city = await db.$transaction(async (tx) => {
+      await assertTopLevelSlugAvailable(tx, input.slug);
+      return tx.city.create({ data: input });
     });
-
-    return NextResponse.json(city);
-  } catch (error: unknown) {
-    const status = isSpreadsheetImportError(error) ? 400 : 500;
-    const message = error instanceof Error ? error.message : 'Server error';
-    return NextResponse.json({ error: message }, { status });
+    revalidateDirectory('city', city.slug);
+    return NextResponse.json(city, { status: 201 });
+  } catch (error) {
+    const result = publicError(error);
+    return NextResponse.json({ error: result.message, field: result.field, code: result.code }, { status: result.status });
   }
 }

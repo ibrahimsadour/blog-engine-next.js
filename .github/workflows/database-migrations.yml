@@ -66,6 +66,13 @@ jobs:
         env:
           DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
 
+      - name: Test content CRUD, validation, transactions and uploads
+        run: |
+          npm test
+          npm run test:functions
+        env:
+          DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
+
       - name: Create a representative legacy database
         run: |
           ADMIN_DATABASE_URL="$SERVER_DATABASE_URL" \

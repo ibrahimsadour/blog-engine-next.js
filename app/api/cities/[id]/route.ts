@@ -1,42 +1,38 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import { assertTopLevelSlugAvailable, publicError, validateDirectoryInput } from '@/lib/content-input';
+import { revalidateDirectory } from '@/lib/revalidate-directory';
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
-
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive } = body;
-
-    const updatedCity = await db.city.update({
-      where: { id },
-      data: { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive },
+    const input = validateDirectoryInput(await request.json(), { topLevel: true });
+    const { oldSlug, city } = await db.$transaction(async (tx) => {
+      const current = await tx.city.findUniqueOrThrow({ where: { id }, select: { slug: true } });
+      await assertTopLevelSlugAvailable(tx, input.slug, { owner: 'city', id });
+      return { oldSlug: current.slug, city: await tx.city.update({ where: { id }, data: input }) };
     });
-
-    return NextResponse.json(updatedCity);
+    revalidateDirectory('city', city.slug, oldSlug);
+    return NextResponse.json(city);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update city' }, { status: 500 });
+    const result = publicError(error);
+    return NextResponse.json({ error: result.message, field: result.field, code: result.code }, { status: result.status });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
-
   try {
     const { id } = await params;
-    await db.city.delete({ where: { id } });
+    const city = await db.city.delete({ where: { id } });
+    revalidateDirectory('city', undefined, city.slug);
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete city' }, { status: 500 });
+    const result = publicError(error);
+    return NextResponse.json({ error: result.message, code: result.code }, { status: result.status });
   }
 }

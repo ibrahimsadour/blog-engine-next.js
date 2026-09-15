@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import PageForm from '@/components/PageForm';
+import { assertTopLevelSlugAvailable, publicError, validatePageInput } from '@/lib/content-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,39 +11,16 @@ export default function NewAdminPage() {
     'use server';
     await requireAdminAction();
 
-    const title = (formData.get('title') as string)?.trim();
-    const slug = (formData.get('slug') as string)?.trim().toLowerCase();
-    const content = (formData.get('content') as string) || '';
-    const metaTitle = (formData.get('metaTitle') as string)?.trim() || null;
-    const metaDesc = (formData.get('metaDesc') as string)?.trim() || null;
-    const isPublished = formData.get('isPublished') === 'on';
-    const showInHeader = formData.get('showInHeader') === 'on';
-    const showInFooter = formData.get('showInFooter') === 'on';
-
-    if (!title || !slug) {
-      return { success: false, error: 'العنوان والرابط الدائم مطلوبان' };
-    }
-
     try {
-      const existing = await db.page.findUnique({
-        where: { slug },
+      const input = validatePageInput({
+        title: formData.get('title'), slug: formData.get('slug'), content: formData.get('content'),
+        metaTitle: formData.get('metaTitle'), metaDesc: formData.get('metaDesc'),
+        isPublished: formData.get('isPublished') === 'on', showInHeader: formData.get('showInHeader') === 'on',
+        showInFooter: formData.get('showInFooter') === 'on',
       });
-
-      if (existing) {
-        return { success: false, error: 'هذا الرابط الدائم (Slug) مستخدم لصفحة أخرى مسبقاً، يرجى اختيار رابط آخر' };
-      }
-
-      const created = await db.page.create({
-        data: {
-          title,
-          slug,
-          content,
-          metaTitle,
-          metaDesc,
-          isPublished,
-          showInHeader,
-          showInFooter,
-        },
+      const created = await db.$transaction(async (tx) => {
+        await assertTopLevelSlugAvailable(tx, input.slug);
+        return tx.page.create({ data: input });
       });
 
       // تفريغ وتحديث الكاش فورياً للصفحة الجديدة، الروابط في الهيدر والفوتر، والسايت ماب
@@ -54,8 +32,8 @@ export default function NewAdminPage() {
       revalidatePath('/admin/pages');
 
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ الصفحة في قاعدة البيانات' };
+    } catch (error) {
+      return { success: false, error: publicError(error).message };
     }
   }
 

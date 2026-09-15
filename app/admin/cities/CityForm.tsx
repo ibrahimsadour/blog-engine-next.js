@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-export default function CityForm({ initialData }: { initialData?: any }) {
+interface CityFormData {
+  id: string; name: string; slug: string; description?: string | null; metaTitle?: string | null;
+  metaDesc?: string | null; keywords?: string | null; sortOrder?: number; isActive?: boolean;
+}
+
+export default function CityForm({ initialData }: { initialData?: CityFormData }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -32,13 +37,14 @@ export default function CityForm({ initialData }: { initialData?: any }) {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error('فشل حفظ المدينة');
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'فشل حفظ المدينة');
 
       toast.success('تم الحفظ بنجاح');
       router.push('/admin/cities');
       router.refresh();
     } catch (error) {
-      toast.error('حدث خطأ أثناء الحفظ');
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء الحفظ');
     } finally {
       setLoading(false);
     }
@@ -52,6 +58,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
           <input
             type="text"
             required
+            maxLength={160}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="w-full border rounded-lg p-2.5 text-sm"
@@ -63,6 +70,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
           <input
             type="text"
             required
+            maxLength={200}
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
             className="w-full border rounded-lg p-2.5 text-sm"
@@ -75,6 +83,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
         <label className="block text-sm font-bold text-gray-700 mb-1">الوصف</label>
         <textarea
           rows={3}
+          maxLength={10000}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           className="w-full border rounded-lg p-2.5 text-sm"
@@ -111,6 +120,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
           <input
             type="text"
             value={form.metaTitle}
+            maxLength={300}
             onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
             className="w-full border rounded-lg p-2.5 text-sm"
           />
@@ -119,6 +129,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
           <label className="block text-sm font-bold text-gray-700 mb-1">وصف الميتا (Meta Description)</label>
           <textarea
             rows={2}
+            maxLength={500}
             value={form.metaDesc}
             onChange={(e) => setForm({ ...form, metaDesc: e.target.value })}
             className="w-full border rounded-lg p-2.5 text-sm"
@@ -129,6 +140,7 @@ export default function CityForm({ initialData }: { initialData?: any }) {
           <input
             type="text"
             value={form.keywords}
+            maxLength={1000}
             onChange={(e) => setForm({ ...form, keywords: e.target.value })}
             className="w-full border rounded-lg p-2.5 text-sm"
             placeholder="كلمة1، كلمة2، كلمة3"

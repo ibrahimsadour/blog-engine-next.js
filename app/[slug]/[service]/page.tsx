@@ -206,8 +206,12 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
 
   // معالجة صفحات المدن مع الخدمة
   if (city) {
-    const [template, otherCities, otherServices] = await Promise.all([
+    const [template, customContent, otherCities, otherServices] = await Promise.all([
       db.globalServiceTemplate.findFirst(),
+      db.cityServiceContent.findUnique({
+        where: { cityId_serviceId: { cityId: city.id, serviceId: service.id } },
+        select: { customTitle: true, customDescription: true },
+      }),
       db.city.findMany({
         where: { slug: { not: city.slug }, isActive: true },
         take: 8,
@@ -229,13 +233,18 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
         otherServices={otherServices}
         phone={phone}
         siteName={siteName}
+        customContent={customContent}
       />
     );
   }
 
   // معالجة صفحات السيارات مع الخدمة
-  const [template, otherCars, otherServices] = await Promise.all([
+  const [template, customContent, otherCars, otherServices] = await Promise.all([
     db.globalCarServiceTemplate.findFirst(),
+    db.carServiceContent.findUnique({
+      where: { carId_serviceId: { carId: car!.id, serviceId: service.id } },
+      select: { customTitle: true, customDescription: true },
+    }),
     db.car.findMany({
       where: { slug: { not: car!.slug }, isActive: true },
       take: 8,
@@ -257,6 +266,7 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
       otherServices={otherServices}
       phone={phone}
       siteName={siteName}
+      customContent={customContent}
     />
   );
 }

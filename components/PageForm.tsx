@@ -92,8 +92,8 @@ export default function PageForm({ initialData, action }: PageFormProps) {
         router.push('/admin/pages');
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر الاتصال بالسيرفر لحفظ الصفحة', { id: toastId });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'تعذر الاتصال بالسيرفر لحفظ الصفحة', { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -110,6 +110,7 @@ export default function PageForm({ initialData, action }: PageFormProps) {
             type="text"
             name="title"
             required
+            maxLength={160}
             value={title}
             onChange={handleTitleChange}
             placeholder="مثال: من نحن أو سياسة الخصوصية"
@@ -124,6 +125,7 @@ export default function PageForm({ initialData, action }: PageFormProps) {
             type="text"
             name="slug"
             required
+            maxLength={200}
             value={slug}
             onChange={handleSlugChange}
             placeholder="about-us"
@@ -147,6 +149,7 @@ export default function PageForm({ initialData, action }: PageFormProps) {
             <input
               type="text"
               name="metaTitle"
+              maxLength={300}
               defaultValue={initialData?.metaTitle || ''}
               placeholder="عنوان مخصص للظهور في محرك البحث"
               className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
@@ -157,6 +160,7 @@ export default function PageForm({ initialData, action }: PageFormProps) {
             <input
               type="text"
               name="metaDesc"
+              maxLength={500}
               defaultValue={initialData?.metaDesc || ''}
               placeholder="وصف مختصر للصفحة في محرك البحث"
               className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
