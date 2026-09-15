@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import * as XLSX from 'xlsx';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import { isSpreadsheetImportError, readXlsxRows } from '@/lib/import-spreadsheet';
 
 export async function GET() {
   try {
@@ -24,10 +24,7 @@ export async function POST(request: Request) {
       const file = formData.get('file') as File;
       if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const rows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+      const rows = await readXlsxRows(file);
 
       let importedCount = 0;
       for (const row of rows) {
@@ -71,8 +68,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(service);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+  } catch (error: unknown) {
+    const status = isSpreadsheetImportError(error) ? 400 : 500;
+    const message = error instanceof Error ? error.message : 'Server error';
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

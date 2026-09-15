@@ -70,7 +70,7 @@ export default function CarsClient({ initialCars }: { initialCars: any[] }) {
           <label className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-green-700 transition text-sm font-bold">
             <Upload className="w-4 h-4" />
             {uploading ? 'جاري الرفع...' : 'رفع Excel'}
-            <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload} className="hidden" />
+            <input type="file" accept=".xlsx" onChange={handleExcelUpload} className="hidden" />
           </label>
           <Link
             href="/admin/cars/new"
