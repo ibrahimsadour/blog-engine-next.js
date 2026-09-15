@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  ADMIN_SESSION_COOKIE,
+  verifyAdminSessionToken,
+} from '@/lib/auth/session';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -16,16 +20,16 @@ export async function middleware(request: NextRequest) {
 
   // 2. حماية لوحة التحكم
   if (pathname.startsWith('/admin')) {
-    const session = request.cookies.get('admin_session')?.value;
-    if (session !== 'authenticated_admin') {
+    const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    if (!(await verifyAdminSessionToken(session))) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     return NextResponse.next();
   }
 
   if (pathname === '/login') {
-    const session = request.cookies.get('admin_session')?.value;
-    if (session === 'authenticated_admin') {
+    const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    if (await verifyAdminSessionToken(session)) {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
     return NextResponse.next();

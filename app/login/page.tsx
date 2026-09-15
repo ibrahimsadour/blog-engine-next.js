@@ -1,5 +1,10 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import {
+  ADMIN_SESSION_COOKIE,
+  adminSessionCookieOptions,
+  createAdminSessionToken,
+} from '@/lib/auth/session';
 
 export default async function LoginPage({
   searchParams,
@@ -18,14 +23,13 @@ export default async function LoginPage({
       redirect('/login?error=1');
     }
 
+    const sessionToken = await createAdminSessionToken();
     const cookieStore = await cookies();
-    cookieStore.set('admin_session', 'authenticated_admin', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // صالح لمدة أسبوع
-    });
+    cookieStore.set(
+      ADMIN_SESSION_COOKIE,
+      sessionToken,
+      adminSessionCookieOptions
+    );
 
     redirect('/admin');
   }

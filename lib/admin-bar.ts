@@ -3,10 +3,16 @@
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
+import {
+  ADMIN_SESSION_COOKIE,
+  verifyAdminSessionToken,
+} from '@/lib/auth/session';
 
 export async function getEditTargetAction(pathname: string) {
   const cookieStore = await cookies();
-  const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
+  const isAdmin = await verifyAdminSessionToken(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
+  );
 
   if (!isAdmin) {
     return { url: '', label: '', isHidden: true };
@@ -96,6 +102,6 @@ export async function getEditTargetAction(pathname: string) {
 
 export async function logoutAdminAction() {
   const cookieStore = await cookies();
-  cookieStore.delete('admin_session');
+  cookieStore.delete(ADMIN_SESSION_COOKIE);
   redirect('/login');
 }

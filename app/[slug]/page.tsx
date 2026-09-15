@@ -17,6 +17,10 @@ import CallToAction from '@/components/CallToAction';
 import RelatedArticles from '@/components/RelatedArticles';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { cookies } from 'next/headers';
+import {
+  ADMIN_SESSION_COOKIE,
+  verifyAdminSessionToken,
+} from '@/lib/auth/session';
 
 export const revalidate = 3600;
 
@@ -266,7 +270,9 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const decodedSlug = decodeURIComponent(rawSlug).trim();
 
   const cookieStore = await cookies();
-  const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
+  const isAdmin = await verifyAdminSessionToken(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
+  );
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
 
   const { phone, siteName } = await getSiteConfig();
