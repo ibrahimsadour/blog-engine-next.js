@@ -169,9 +169,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 2. التحقق من المقالات
+  const isAdmin = await isAdminAuthenticated();
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      ...(isAdmin ? {} : { isPublished: true }),
     },
     include: { category: true },
   });

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '../../../../lib/db';
-import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import {
+  authorizeAdminApiRequest,
+  isAdminAuthenticated,
+} from '@/lib/auth/authorization';
 
 export async function GET(
   _request: NextRequest,
@@ -10,8 +13,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const article = await db.article.findUnique({
-      where: { id },
+    const isAdmin = await isAdminAuthenticated();
+    const article = await db.article.findFirst({
+      where: {
+        id,
+        ...(isAdmin ? {} : { isPublished: true }),
+      },
       include: { category: true },
     });
     if (!article) return NextResponse.json({ message: 'المقال غير موجود' }, { status: 404 });
