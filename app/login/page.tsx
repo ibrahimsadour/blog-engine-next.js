@@ -1,27 +1,49 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import {
   ADMIN_SESSION_COOKIE,
   adminSessionCookieOptions,
   createAdminSessionToken,
 } from '@/lib/auth/session';
+import {
+  checkLoginRateLimit,
+  clearClientLoginFailures,
+  createLoginRateLimitKey,
+  recordFailedLogin,
+} from '@/lib/auth/login-rate-limit';
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; retry?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, retry } = await searchParams;
+  const retryMinutes = Math.max(1, Math.ceil((Number(retry) || 60) / 60));
 
   async function handleLogin(formData: FormData) {
     'use server';
+
+    const requestHeaders = await headers();
+    const clientKey = await createLoginRateLimitKey(requestHeaders);
+    const currentLimit = await checkLoginRateLimit(clientKey);
+
+    if (currentLimit.limited) {
+      redirect(`/login?error=rate-limited&retry=${currentLimit.retryAfterSeconds}`);
+    }
 
     const password = formData.get('password') as string;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
     if (!adminPassword || password !== adminPassword) {
+      const failedLimit = await recordFailedLogin(clientKey);
+      if (failedLimit.limited) {
+        redirect(`/login?error=rate-limited&retry=${failedLimit.retryAfterSeconds}`);
+      }
+
       redirect('/login?error=1');
     }
+
+    await clearClientLoginFailures(clientKey);
 
     const sessionToken = await createAdminSessionToken();
     const cookieStore = await cookies();
@@ -44,7 +66,9 @@ export default async function LoginPage({
 
         {error && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-bold text-red-600">
-            كلمة المرور غير صحيحة، يرجى المحاولة مجدداً
+            {error === 'rate-limited'
+              ? `محاولات كثيرة، حاول مجدداً بعد نحو ${retryMinutes} دقيقة`
+              : 'كلمة المرور غير صحيحة، يرجى المحاولة مجدداً'}
           </div>
         )}
 
