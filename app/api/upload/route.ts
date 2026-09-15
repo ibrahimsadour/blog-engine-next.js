@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, unlink, mkdir, chmod } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 
 // تنظيف اسم الملف وجعله آمناً تماماً للروابط وسيرفرات Linux
 function sanitizeFileName(fileName: string): string {
@@ -26,6 +27,9 @@ function sanitizeFileName(fileName: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const data = await request.formData();
     const file: File | null = data.get('file') as unknown as File;
@@ -82,6 +86,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     let targetUrl: string | null = null;
 

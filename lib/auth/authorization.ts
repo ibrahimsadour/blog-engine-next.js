@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
 import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
@@ -33,4 +34,18 @@ export async function requireAdmin(): Promise<AdminSession> {
   }
 
   return session;
+}
+
+export async function authorizeAdminApiRequest(): Promise<NextResponse | null> {
+  if (await isAdminAuthenticated()) {
+    return null;
+  }
+
+  return NextResponse.json(
+    { error: 'غير مصرح بتنفيذ هذه العملية' },
+    {
+      status: 401,
+      headers: { 'Cache-Control': 'no-store' },
+    }
+  );
 }

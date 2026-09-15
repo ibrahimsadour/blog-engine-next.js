@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '../../../../lib/db';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await params;
     const { name, slug, description } = await request.json();
@@ -39,6 +43,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await params;
 

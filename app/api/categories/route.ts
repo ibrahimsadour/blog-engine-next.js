@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '../../../lib/db';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 
 // جلب جميع التصنيفات
 export async function GET() {
@@ -22,6 +23,9 @@ export async function GET() {
 
 // إنشاء تصنيف جديد
 export async function POST(request: NextRequest) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const { name, slug, description, metaTitle, metaDesc } = body;

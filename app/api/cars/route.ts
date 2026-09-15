@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import * as XLSX from 'xlsx';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 
 export async function GET() {
   try {
@@ -12,6 +13,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
 const contentType = request.headers.get('content-type') || '';
     
@@ -73,6 +77,9 @@ const contentType = request.headers.get('content-type') || '';
 }
 
 export async function DELETE() {
+  const unauthorized = await authorizeAdminApiRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const deleted = await db.car.deleteMany({});
     return NextResponse.json({ success: true, count: deleted.count });
