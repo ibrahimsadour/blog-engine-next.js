@@ -225,7 +225,8 @@ export default function SettingsForm({
   // 7. حفظ أكواد الـ Head
   async function handleHeadSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
     setLoadingHead(true);
     const toastId = toast.loading('جاري حفظ أكواد الـ Head...');
@@ -236,6 +237,8 @@ export default function SettingsForm({
         toast.error(res.error || 'تعذر حفظ الأكواد', { id: toastId });
       } else {
         toast.success('تم حفظ وتفعيل أكواد الـ Head بنجاح!', { id: toastId });
+        const passwordInput = form.elements.namedItem('adminPassword');
+        if (passwordInput instanceof HTMLInputElement) passwordInput.value = '';
         router.refresh();
       }
     } catch (err: any) {
@@ -602,6 +605,19 @@ export default function SettingsForm({
             className="w-full rounded-xl border border-gray-300 bg-gray-900 p-4 font-mono text-xs text-green-400 placeholder:text-gray-600 focus:border-blue-500 focus:outline-hidden"
             dir="ltr"
           />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-xs font-bold text-gray-700">تأكيد كلمة مرور المدير</label>
+          <input
+            type="password"
+            name="adminPassword"
+            required
+            maxLength={4096}
+            autoComplete="current-password"
+            className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+          />
+          <p className="mt-2 text-[11px] text-gray-500">يتطلب تعديل هذا الحقل الحساس إعادة التحقق. تُقبل فقط وسوم meta وlink وملفات script الخارجية عبر HTTPS من النطاقات الموثوقة.</p>
         </div>
 
         <div className="flex justify-end pt-2">

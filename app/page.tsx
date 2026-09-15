@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
 import CallToAction from '@/components/CallToAction';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,11 +107,11 @@ export default async function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50 pb-24 md:pb-12">
@@ -207,7 +208,7 @@ export default async function HomePage() {
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-8">
                 <div
                   className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
-                  dangerouslySetInnerHTML={{ __html: settings.homeCustomContent }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(settings.homeCustomContent) }}
                 />
               </div>
             </section>

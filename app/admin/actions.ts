@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import { validateCustomServiceContent } from '@/lib/content-input';
+import { sanitizeContentHtml } from '@/lib/security/content';
 
 function sanitizeSlug(text: string): string {
   return (text || '')
@@ -196,11 +197,11 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   await requireAdminAction();
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
-  const descTemplate = (formData.get('descTemplate') as string) || '';
-  const introTemplates = (formData.get('introTemplates') as string) || '';
-  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
+  const introTemplates = sanitizeContentHtml(formData.get('introTemplates'));
+  const outroTemplates = sanitizeContentHtml(formData.get('outroTemplates'));
   const faqTemplates = (formData.get('faqTemplates') as string) || '';
-  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const neighborhoodTemplates = sanitizeContentHtml(formData.get('neighborhoodTemplates'));
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
   const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
   const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
@@ -272,11 +273,11 @@ export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
   await requireAdminAction();
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
-  const descTemplate = (formData.get('descTemplate') as string) || '';
-  const introTemplates = (formData.get('introTemplates') as string) || '';
-  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
+  const introTemplates = sanitizeContentHtml(formData.get('introTemplates'));
+  const outroTemplates = sanitizeContentHtml(formData.get('outroTemplates'));
   const faqTemplates = (formData.get('faqTemplates') as string) || '';
-  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const neighborhoodTemplates = sanitizeContentHtml(formData.get('neighborhoodTemplates'));
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
   const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
   const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';

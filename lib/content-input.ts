@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { sanitizeContentHtml } from '@/lib/security/content';
 
 export const CONTENT_LIMITS = {
   name: 160,
@@ -128,7 +129,7 @@ export function validatePageInput(value: unknown) {
   return {
     title: requiredText(input.title, 'title', 'العنوان', CONTENT_LIMITS.name),
     slug: validatedSlug(input.slug, true),
-    content: requiredText(input.content, 'content', 'المحتوى', CONTENT_LIMITS.content),
+    content: sanitizeContentHtml(requiredText(input.content, 'content', 'المحتوى', CONTENT_LIMITS.content)),
     metaTitle: optionalText(input.metaTitle, 'metaTitle', 'عنوان الميتا', CONTENT_LIMITS.metaTitle),
     metaDesc: optionalText(input.metaDesc, 'metaDesc', 'وصف الميتا', CONTENT_LIMITS.metaDescription),
     isPublished: optionalBoolean(input.isPublished, 'isPublished', true),
@@ -149,7 +150,7 @@ export function validateArticleInput(value: unknown) {
   return {
     title: requiredText(input.title, 'title', 'عنوان المقال', CONTENT_LIMITS.name),
     slug: validatedSlug(input.slug, true),
-    content: requiredText(input.content, 'content', 'محتوى المقال', CONTENT_LIMITS.content),
+    content: sanitizeContentHtml(requiredText(input.content, 'content', 'محتوى المقال', CONTENT_LIMITS.content)),
     excerpt: optionalText(input.excerpt, 'excerpt', 'المقتطف', CONTENT_LIMITS.description),
     featuredImage: optionalText(input.featuredImage, 'featuredImage', 'رابط الصورة', CONTENT_LIMITS.url),
     altText: optionalText(input.altText, 'altText', 'النص البديل', CONTENT_LIMITS.name),
@@ -168,11 +169,12 @@ export function validateArticleInput(value: unknown) {
 export function validateCustomServiceContent(value: unknown, owner: 'city' | 'car') {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new InputValidationError('بيانات المحتوى المخصص غير صالحة');
   const input = value as Record<string, unknown>;
+  const customDescription = optionalText(input.customDescription, 'customDescription', 'الوصف المخصص', CONTENT_LIMITS.description);
   return {
     ownerId: requiredText(input.ownerId, `${owner}Id`, owner === 'city' ? 'المدينة' : 'السيارة', 64),
     serviceId: requiredText(input.serviceId, 'serviceId', 'الخدمة', 64),
     customTitle: optionalText(input.customTitle, 'customTitle', 'العنوان المخصص', CONTENT_LIMITS.name),
-    customDescription: optionalText(input.customDescription, 'customDescription', 'الوصف المخصص', CONTENT_LIMITS.description),
+    customDescription: customDescription ? sanitizeContentHtml(customDescription) : null,
     metaTitle: optionalText(input.metaTitle, 'metaTitle', 'عنوان الميتا', CONTENT_LIMITS.metaTitle),
     metaDesc: optionalText(input.metaDesc, 'metaDesc', 'وصف الميتا', CONTENT_LIMITS.metaDescription),
   };

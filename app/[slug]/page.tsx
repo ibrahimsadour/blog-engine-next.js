@@ -17,6 +17,7 @@ import CallToAction from '@/components/CallToAction';
 import RelatedArticles from '@/components/RelatedArticles';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { isAdminAuthenticated } from '@/lib/auth/authorization';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 export const revalidate = 3600;
 
@@ -297,7 +298,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
         <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
           <div className="mx-auto max-w-4xl space-y-8">
@@ -367,7 +368,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
         <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12" dir="rtl">
           <div className="mx-auto max-w-4xl space-y-8">
@@ -473,7 +474,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     const parsedTitle = parseContentVariables(article.title, phone, siteName);
     const parsedExcerpt = article.excerpt ? parseContentVariables(article.excerpt, phone, siteName) : '';
     const parsedMetaDesc = article.metaDesc ? parseContentVariables(article.metaDesc, phone, siteName) : undefined;
-    const parsedContent = parseContentVariables(article.content, phone, siteName);
+    const parsedContent = sanitizeContentHtml(parseContentVariables(article.content, phone, siteName));
 
     const articleSchema = generateArticleSchema(
       {
@@ -509,7 +510,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
 
     const { htmlWithIds, headings } = injectHeadingIds(parsedContent);
-    const processedContent = injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`);
+    const processedContent = sanitizeContentHtml(injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`));
 
     return (
       <>
@@ -517,20 +518,20 @@ export default async function DynamicSlugPage({ params }: PageProps) {
           <>
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
             />
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }}
             />
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
             {faqSchema && (
               <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
               />
             )}
           </>
@@ -626,7 +627,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
   if (page) {
     const parsedPageTitle = parseContentVariables(page.title, phone, siteName);
-    const parsedPageContent = parseContentVariables(page.content, phone, siteName);
+    const parsedPageContent = sanitizeContentHtml(parseContentVariables(page.content, phone, siteName));
 
     const breadcrumbs = [
       { name: 'الرئيسية', url: '/' },

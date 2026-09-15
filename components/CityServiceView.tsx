@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { generateBreadcrumbSchema } from '@/lib/schema';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 interface CityServiceViewProps {
   city: { id: string; name: string; slug: string };
@@ -134,12 +135,12 @@ export default function CityServiceView({
 
   const selectedTestimonials = getStableMultiple(allTestimonials, `testimonial-${seed}`, 2);
 
-  const fullHtmlContent = `
+  const fullHtmlContent = sanitizeContentHtml(`
     ${selectedIntro ? `<div class="mb-6 text-lg font-medium">${selectedIntro}</div>` : ''}
     <div>${coreDescription}</div>
     ${selectedNeighborhood ? `<div class="my-6 p-4 bg-gray-50 rounded-lg border text-base text-gray-700">${selectedNeighborhood}</div>` : ''}
     ${selectedOutro ? `<div class="mt-6 text-lg font-medium">${selectedOutro}</div>` : ''}
-  `;
+  `);
 
   const breadcrumbItems = [
     { name: 'الرئيسية', url: '/' },
@@ -186,13 +187,13 @@ export default function CityServiceView({
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       {faqSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
       )}
       {reviewSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(reviewSchema) }} />
       )}
 
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">

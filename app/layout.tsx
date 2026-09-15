@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import AdminBar from '@/components/AdminBar';
 import { db } from '@/lib/db';
 import { Toaster } from 'sonner';
+import { sanitizeCustomHeadCode } from '@/lib/security/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +92,7 @@ export default async function RootLayout({
     const setting = await db.setting.findUnique({
       where: { key: 'custom_head_code' },
     });
-    headCode = setting?.value?.trim() || '';
+    headCode = sanitizeCustomHeadCode(setting?.value?.trim() || '');
   } catch {
     // في حال عدم توفر الاتصال مؤقتاً
   }

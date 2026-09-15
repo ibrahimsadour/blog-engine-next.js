@@ -2,6 +2,8 @@ import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import SettingsForm from './SettingsForm';
+import { verifyAdminPassword } from '@/lib/auth/password';
+import { sanitizeContentHtml, sanitizeCustomHeadCode } from '@/lib/security/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +93,7 @@ export default async function AdminSettingsPage() {
     await requireAdminAction();
 
     try {
-      const homeCustomContent = (formData.get('homeCustomContent') as string) || '';
+      const homeCustomContent = sanitizeContentHtml(formData.get('homeCustomContent'));
 
       await db.setting.upsert({
         where: { key: 'home_custom_content' },
@@ -201,7 +203,11 @@ export default async function AdminSettingsPage() {
     await requireAdminAction();
 
     try {
-      const headCode = (formData.get('headCode') as string) || '';
+      if (!verifyAdminPassword(formData.get('adminPassword'), process.env.ADMIN_PASSWORD)) {
+        return { success: false, error: 'كلمة مرور المدير غير صحيحة' };
+      }
+
+      const headCode = sanitizeCustomHeadCode(formData.get('headCode'));
 
       await db.setting.upsert({
         where: { key: 'custom_head_code' },

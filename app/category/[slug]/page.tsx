@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { db } from '@/lib/db';
 import { generateBreadcrumbSchema } from '@/lib/schema';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { serializeJsonLd } from '@/lib/security/content';
 
 export const revalidate = 3600;
 
@@ -118,11 +119,11 @@ export default async function CategoryPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50 px-4 py-10 md:px-8">
