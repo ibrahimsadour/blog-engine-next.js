@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ export default async function RedirectsAdminPage() {
 
   async function addRedirectAction(formData: FormData) {
     'use server';
+    await requireAdmin();
 
     let sourcePath = (formData.get('sourcePath') as string).trim();
     let targetPath = (formData.get('targetPath') as string).trim();
@@ -31,6 +33,8 @@ export default async function RedirectsAdminPage() {
 
   async function deleteRedirectAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     const id = formData.get('id') as string;
     await db.redirect.delete({ where: { id } });
     revalidatePath('/admin/redirects');

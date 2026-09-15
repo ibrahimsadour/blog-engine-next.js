@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import SettingsForm from './SettingsForm';
 
@@ -14,6 +15,8 @@ export default async function AdminSettingsPage() {
   // 1. حفظ الهوية وبيانات الاتصال
   async function saveIdentityAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const siteName = (formData.get('siteName') as string)?.trim();
       const phoneNumber = (formData.get('phoneNumber') as string)?.trim();
@@ -51,6 +54,8 @@ export default async function AdminSettingsPage() {
   // 2. حفظ واجهة الهيرو (Hero Section)
   async function saveHeroAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const heroTitle = (formData.get('heroTitle') as string)?.trim();
       if (!heroTitle) return { success: false, error: 'العنوان الرئيسي مطلوب' };
@@ -83,6 +88,8 @@ export default async function AdminSettingsPage() {
   // 3. حفظ محتوى الصفحة الرئيسية المخصص
   async function saveHomeContentAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const homeCustomContent = (formData.get('homeCustomContent') as string) || '';
 
@@ -103,6 +110,8 @@ export default async function AdminSettingsPage() {
   // 4. حفظ حسابات التواصل الاجتماعي
   async function saveSocialAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const updates = [
         { key: 'facebook_url', value: (formData.get('facebookUrl') as string)?.trim() || '' },
@@ -130,6 +139,8 @@ export default async function AdminSettingsPage() {
   // 5. حفظ إعدادات SEO الصفحة الرئيسية
   async function saveHomeSeoAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const updates = [
         { key: 'home_meta_title', value: (formData.get('homeMetaTitle') as string)?.trim() || '' },
@@ -158,6 +169,8 @@ export default async function AdminSettingsPage() {
   // 6. حفظ نصوص الفوتر
   async function saveFooterAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const updates = [
         { key: 'footer_description', value: (formData.get('footerDescription') as string)?.trim() || '' },
@@ -185,6 +198,8 @@ export default async function AdminSettingsPage() {
   // 7. حفظ أكواد الـ Head
   async function saveHeadCodeAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const headCode = (formData.get('headCode') as string) || '';
 
@@ -205,6 +220,8 @@ export default async function AdminSettingsPage() {
   // 8. حفظ ملف Robots.txt
   async function saveRobotsTxtAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const robotsTxt = (formData.get('robotsTxt') as string) || '';
 

@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 
 function sanitizeSlug(text: string): string {
@@ -14,6 +15,8 @@ function sanitizeSlug(text: string): string {
 }
 
 export async function deleteArticleAction(id: string) {
+  await requireAdmin();
+
   try {
     await db.article.delete({
       where: { id },
@@ -27,6 +30,8 @@ export async function deleteArticleAction(id: string) {
 }
 
 export async function createArticleAction(formData: FormData) {
+  await requireAdmin();
+
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
   const slug = sanitizeSlug(rawSlug);
@@ -89,6 +94,8 @@ export async function createArticleAction(formData: FormData) {
 }
 
 export async function updateArticleAction(id: string, formData: FormData) {
+  await requireAdmin();
+
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
   const slug = sanitizeSlug(rawSlug);
@@ -151,6 +158,8 @@ export async function updateArticleAction(id: string, formData: FormData) {
 }
 
 export async function saveCityServiceContentAction(formData: FormData) {
+  await requireAdmin();
+
   const cityId = (formData.get('cityId') as string) || '';
   const serviceId = (formData.get('serviceId') as string) || '';
   const customTitle = (formData.get('customTitle') as string) || null;
@@ -186,6 +195,8 @@ export async function saveCityServiceContentAction(formData: FormData) {
 }
 
 export async function saveGlobalServiceTemplateAction(formData: FormData) {
+  await requireAdmin();
+
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = (formData.get('descTemplate') as string) || '';
   const introTemplates = (formData.get('introTemplates') as string) || '';
@@ -226,6 +237,8 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   revalidatePath('/admin/service-templates');
 }
 export async function saveCarServiceContentAction(formData: FormData) {
+  await requireAdmin();
+
   const carId = (formData.get('carId') as string) || '';
   const serviceId = (formData.get('serviceId') as string) || '';
   const customTitle = (formData.get('customTitle') as string) || null;
@@ -261,6 +274,8 @@ export async function saveCarServiceContentAction(formData: FormData) {
 }
 
 export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
+  await requireAdmin();
+
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = (formData.get('descTemplate') as string) || '';
   const introTemplates = (formData.get('introTemplates') as string) || '';

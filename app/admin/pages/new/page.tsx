@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import PageForm from '@/components/PageForm';
 
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export default function NewAdminPage() {
   async function createPageAction(formData: FormData) {
     'use server';
+    await requireAdmin();
 
     const title = (formData.get('title') as string)?.trim();
     const slug = (formData.get('slug') as string)?.trim().toLowerCase();

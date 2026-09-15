@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import CategoriesClient from './CategoriesClient';
 
@@ -27,6 +28,8 @@ export default async function AdminCategoriesPage() {
   // حفظ أو تعديل تصنيف
   async function saveCategoryAction(formData: FormData) {
     'use server';
+    await requireAdmin();
+
     try {
       const id = (formData.get('id') as string)?.trim();
       const name = (formData.get('name') as string)?.trim() || '';
@@ -80,6 +83,8 @@ export default async function AdminCategoriesPage() {
   // حذف تصنيف مع فحص المقالات المربوطة
   async function deleteCategoryAction(id: string) {
     'use server';
+    await requireAdmin();
+
     try {
       if (!id) {
         return { success: false, error: 'معرف التصنيف غير صالح' };
