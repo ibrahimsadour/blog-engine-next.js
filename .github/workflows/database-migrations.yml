@@ -68,8 +68,9 @@ jobs:
 
       - name: Create a representative legacy database
         run: |
-          printf '%s\n' 'CREATE DATABASE `legacy_migration_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' \
-            | DATABASE_URL="$SERVER_DATABASE_URL" npx prisma db execute --stdin
+          ADMIN_DATABASE_URL="$SERVER_DATABASE_URL" \
+            TEST_DATABASE_NAME="legacy_migration_test" \
+            node scripts/create-test-database.mjs
           DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma db execute \
             --file prisma/migrations/20260823142054_init_service_schema/migration.sql
           DATABASE_URL="$LEGACY_DATABASE_URL" npx prisma db execute \
