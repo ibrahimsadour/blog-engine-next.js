@@ -26,7 +26,6 @@ import {
   AlignJustify,
   Link as LinkIcon,
   Unlink,
-  Image as ImageIcon,
   Undo,
   Redo,
   Upload,
@@ -49,6 +48,13 @@ interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
+}
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function isManagedImageUrl(url: string): boolean {
+  return url.startsWith("/api/media/") || url.startsWith("/uploads/");
 }
 
 export default function RichTextEditor({
@@ -125,6 +131,7 @@ export default function RichTextEditor({
         class:
           "prose prose-lg max-w-none min-h-[400px] p-4 focus:outline-none text-slate-800 dir-rtl",
         dir: "rtl",
+        "aria-label": placeholder,
       },
     },
     onUpdate: ({ editor }) => {
@@ -137,7 +144,6 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editor && content !== editor.getHTML() && !isSourceMode) {
       editor.commands.setContent(content || "");
-      setSourceCode(content || "");
     }
   }, [content, editor, isSourceMode]);
 
@@ -207,6 +213,18 @@ export default function RichTextEditor({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      alert("يُسمح فقط بصور JPG وPNG وWebP.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert("حجم الصورة يتجاوز الحد الأقصى المسموح وهو 5 ميغابايت.");
+      e.target.value = "";
+      return;
+    }
+
     const altText = window.prompt(
       "أدخل النص البديل للصورة (Alt Text للسيو):",
       file.name.replace(/\.[^/.]+$/, "")
@@ -264,7 +282,7 @@ export default function RichTextEditor({
     if (!confirmDelete) return;
 
     try {
-      if (imageSrc.startsWith("/uploads/")) {
+      if (isManagedImageUrl(imageSrc)) {
         await fetch(`/api/upload?src=${encodeURIComponent(imageSrc)}`, {
           method: "DELETE",
         });
@@ -591,7 +609,7 @@ export default function RichTextEditor({
               type="file"
               ref={fileInputRef}
               onChange={handleFileUpload}
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               className="hidden"
             />
             <button
@@ -770,7 +788,7 @@ export default function RichTextEditor({
                   className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                 />
                 <label htmlFor="linkTargetCheckbox" className="text-xs text-slate-700 font-medium cursor-pointer">
-                  فتح الرابط في تبويب جديد (<code>target="_blank"</code>)
+                  فتح الرابط في تبويب جديد (<code>target=&quot;_blank&quot;</code>)
                 </label>
               </div>
             </div>

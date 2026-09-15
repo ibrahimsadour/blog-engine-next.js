@@ -2,6 +2,39 @@ import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+function getHttpsHostname(value: string | undefined): string | null {
+  if (!value?.trim() || value.includes("*")) return null;
+
+  try {
+    const candidate = value.includes("://") ? value.trim() : `https://${value.trim()}`;
+    const url = new URL(candidate);
+
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      (value.includes("://") === false &&
+        (url.pathname !== "/" || url.search || url.hash))
+    ) {
+      return null;
+    }
+
+    return url.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+const remoteImageHosts = new Set<string>();
+const siteHostname = getHttpsHostname(process.env.NEXT_PUBLIC_SITE_URL);
+if (siteHostname) remoteImageHosts.add(siteHostname);
+
+for (const configuredHost of (process.env.IMAGE_REMOTE_HOSTS || "").split(",")) {
+  const hostname = getHttpsHostname(configuredHost);
+  if (hostname) remoteImageHosts.add(hostname);
+}
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -10,7 +43,7 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' https:",
   "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https: http:",
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
   "connect-src 'self' https:",
   "media-src 'self' data: blob: https:",
@@ -61,16 +94,16 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**", // السماح بجلب الصور من أي رابط خارجي
-      },
-      {
-        protocol: "http",
-        hostname: "**",
-      },
-    ],
+    remotePatterns: Array.from(remoteImageHosts, (hostname) => ({
+      protocol: "https" as const,
+      hostname,
+      port: "",
+      pathname: "/**",
+    })),
+    maximumRedirects: 0,
+    dangerouslyAllowSVG: false,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'none'; sandbox;",
   },
 };
 

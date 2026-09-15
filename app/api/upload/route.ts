@@ -1,83 +1,105 @@
+import { randomUUID } from 'node:crypto';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink, mkdir, chmod } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import {
+  MAX_IMAGE_BYTES,
+  MAX_UPLOAD_REQUEST_BYTES,
+  validateImageUpload,
+} from '@/lib/media/image-validation';
+import {
+  getLegacyFileNameFromUrl,
+  getLegacyFilePath,
+  getStoredFileNameFromUrl,
+  getStoredFilePath,
+  getUploadStorageDirectory,
+  MEDIA_URL_PREFIX,
+} from '@/lib/media/storage';
 
-// تنظيف اسم الملف وجعله آمناً تماماً للروابط وسيرفرات Linux
-function sanitizeFileName(fileName: string): string {
-  const ext = path.extname(fileName).toLowerCase();
-  let baseName = path.basename(fileName, ext);
+const MAX_WRITE_ATTEMPTS = 3;
 
-  // استبدال المسافات والرموز الخاصة بشرطات
-  baseName = baseName
-    .normalize('NFKD') // توحيد الترميز
-    .replace(/[\s_]+/g, '-') // تحويل المسافات والـ underscores إلى شرطات
-    .replace(/[^a-zA-Z0-9\u0600-\u06FF-]/g, '') // السماح بالأحرف الإنجليزية، العربية، الأرقام والشرطات فقط
-    .replace(/-+/g, '-') // إزالة تكرار الشرطات
-    .replace(/^-+|-+$/g, '') // إزالة الشرطة من البداية أو النهاية
-    .toLowerCase();
+function validateRequestSize(request: NextRequest): NextResponse | null {
+  const contentLength = request.headers.get('content-length');
+  if (!contentLength) return null;
 
-  // في حال كان الاسم فارغاً بعد التنظيف
-  if (!baseName) {
-    baseName = `file-${Date.now()}`;
+  if (!/^\d+$/.test(contentLength)) {
+    return NextResponse.json({ error: 'حجم الطلب غير صالح' }, { status: 400 });
   }
 
-  return `${baseName}${ext}`;
+  if (Number(contentLength) > MAX_UPLOAD_REQUEST_BYTES) {
+    return NextResponse.json(
+      { error: 'حجم طلب الرفع يتجاوز الحد الأقصى المسموح' },
+      { status: 413 }
+    );
+  }
+
+  return null;
+}
+
+async function writeImageAtomically(
+  buffer: Buffer,
+  extension: string
+): Promise<string> {
+  await mkdir(getUploadStorageDirectory(), { recursive: true, mode: 0o755 });
+
+  for (let attempt = 0; attempt < MAX_WRITE_ATTEMPTS; attempt++) {
+    const fileName = `${randomUUID()}.${extension}`;
+
+    try {
+      await writeFile(getStoredFilePath(fileName), buffer, {
+        flag: 'wx',
+        mode: 0o644,
+      });
+      return fileName;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+  }
+
+  throw new Error('Unable to allocate a unique media file name');
 }
 
 export async function POST(request: NextRequest) {
   const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
+  const invalidRequestSize = validateRequestSize(request);
+  if (invalidRequestSize) return invalidRequestSize;
+
+  if (!request.headers.get('content-type')?.startsWith('multipart/form-data')) {
+    return NextResponse.json({ error: 'صيغة طلب الرفع غير مدعومة' }, { status: 415 });
+  }
+
   try {
     const data = await request.formData();
-    const file: File | null = data.get('file') as unknown as File;
+    const file = data.get('file');
 
-    if (!file) {
+    if (!(file instanceof File) || file.size === 0) {
       return NextResponse.json({ error: 'لم يتم اختيار أي ملف' }, { status: 400 });
     }
 
-    // التحقق من نوع الملف
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
-    if (!validTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'نوع الملف غير مدعوم' }, { status: 400 });
+    if (file.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json(
+        { error: 'حجم الصورة يتجاوز 5 ميغابايت' },
+        { status: 413 }
+      );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const imageType = validateImageUpload(file.name, file.type, buffer);
 
-    // مجلد الحفظ داخل public/uploads
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true, mode: 0o755 });
+    if (!imageType) {
+      return NextResponse.json(
+        { error: 'يُسمح فقط بصور JPG وPNG وWebP المطابقة لمحتواها الحقيقي' },
+        { status: 415 }
+      );
     }
 
-    // تنظيف الاسم والامتداد
-    const cleanName = sanitizeFileName(file.name);
-    const ext = path.extname(cleanName);
-    const baseName = path.basename(cleanName, ext);
-
-    let finalFileName = cleanName;
-    let filePath = path.join(uploadDir, finalFileName);
-    let counter = 1;
-
-    // إضافة رقم تسلسلي فريد عند التكرار
-    while (existsSync(filePath)) {
-      finalFileName = `${baseName}-${counter}${ext}`;
-      filePath = path.join(uploadDir, finalFileName);
-      counter++;
-    }
-
-    // كتابة الملف
-    await writeFile(filePath, buffer);
-
-    // تطبيق صلاحية القراءة العامة للملف فوراً
-    await chmod(filePath, 0o644);
+    const fileName = await writeImageAtomically(buffer, imageType.extension);
 
     return NextResponse.json({
       success: true,
-      url: `/uploads/${finalFileName}`,
+      url: `${MEDIA_URL_PREFIX}${fileName}`,
     });
   } catch (error) {
     console.error('Upload Error:', error);
@@ -90,37 +112,50 @@ export async function DELETE(request: NextRequest) {
   if (unauthorized) return unauthorized;
 
   try {
-    let targetUrl: string | null = null;
-
-    // استخراج الرابط سواء من الـ URL Query أو من JSON Body
     const { searchParams } = new URL(request.url);
-    const queryUrl = searchParams.get('src') || searchParams.get('url');
+    let targetUrl: unknown = searchParams.get('src') || searchParams.get('url');
 
-    if (queryUrl) {
-      targetUrl = queryUrl;
-    } else {
+    if (!targetUrl) {
       try {
-        const body = await request.json();
+        const body = (await request.json()) as { url?: unknown; src?: unknown };
         targetUrl = body.url || body.src;
       } catch {
-        // Body فارغ
+        targetUrl = null;
       }
     }
 
-    // التحقق من صحة المسار ومنع Path Traversal
-    if (!targetUrl || typeof targetUrl !== 'string' || !targetUrl.startsWith('/uploads/') || targetUrl.includes('..')) {
+    if (typeof targetUrl !== 'string') {
       return NextResponse.json({ error: 'مسار غير صالح' }, { status: 400 });
     }
 
-    const safePath = path.normalize(targetUrl).replace(/^(\.\.[\/\\])+/, '');
-    const filePath = path.join(process.cwd(), 'public', safePath);
+    const storedFileName = getStoredFileNameFromUrl(targetUrl);
+    const legacyFileName = getLegacyFileNameFromUrl(targetUrl);
+    const filePath = storedFileName
+      ? getStoredFilePath(storedFileName)
+      : legacyFileName
+        ? getLegacyFilePath(legacyFileName)
+        : null;
 
-    if (existsSync(filePath)) {
-      await unlink(filePath);
-      return NextResponse.json({ success: true, message: 'تم حذف الصورة بنجاح من السيرفر' });
+    if (!filePath) {
+      return NextResponse.json({ error: 'مسار غير صالح' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'الملف غير موجود على السيرفر' }, { status: 404 });
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return NextResponse.json(
+          { error: 'الملف غير موجود على السيرفر' },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'تم حذف الصورة بنجاح من السيرفر',
+    });
   } catch (error) {
     console.error('Delete Error:', error);
     return NextResponse.json({ error: 'فشل في حذف الصورة' }, { status: 500 });

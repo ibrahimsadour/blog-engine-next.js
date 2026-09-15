@@ -79,12 +79,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: ['/', '/api/media/'],
         disallow: ['/admin/', '/login', '/api/'],
       },
       {
         userAgent: 'Googlebot-Image',
-        allow: ['/uploads/', '/_next/image'],
+        allow: ['/api/media/', '/uploads/', '/_next/image'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

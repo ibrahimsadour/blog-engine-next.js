@@ -40,6 +40,7 @@
 *.sqlite3
 *.db
 /public/uploads/
+/storage/
 
 # ==========================================
 # 5. Logs & Debugging
