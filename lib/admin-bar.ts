@@ -3,16 +3,11 @@
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
-import {
-  ADMIN_SESSION_COOKIE,
-  verifyAdminSessionToken,
-} from '@/lib/auth/session';
+import { isAdminAuthenticated } from '@/lib/auth/authorization';
+import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
 
 export async function getEditTargetAction(pathname: string) {
-  const cookieStore = await cookies();
-  const isAdmin = await verifyAdminSessionToken(
-    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
-  );
+  const isAdmin = await isAdminAuthenticated();
 
   if (!isAdmin) {
     return { url: '', label: '', isHidden: true };

@@ -2,12 +2,15 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
+import { requireAdmin } from '@/lib/auth/authorization';
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await requireAdmin();
+
   async function logoutAction() {
     'use server';
     const cookieStore = await cookies();

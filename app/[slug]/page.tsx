@@ -16,11 +16,7 @@ import FaqSection from '@/components/FaqSection';
 import CallToAction from '@/components/CallToAction';
 import RelatedArticles from '@/components/RelatedArticles';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
-import { cookies } from 'next/headers';
-import {
-  ADMIN_SESSION_COOKIE,
-  verifyAdminSessionToken,
-} from '@/lib/auth/session';
+import { isAdminAuthenticated } from '@/lib/auth/authorization';
 
 export const revalidate = 3600;
 
@@ -269,10 +265,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
 
-  const cookieStore = await cookies();
-  const isAdmin = await verifyAdminSessionToken(
-    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
-  );
+  const isAdmin = await isAdminAuthenticated();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
 
   const { phone, siteName } = await getSiteConfig();
