@@ -1,11 +1,15 @@
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import SettingsForm from './SettingsForm';
 import { verifyAdminPassword } from '@/lib/auth/password';
 import { sanitizeContentHtml, sanitizeCustomHeadCode } from '@/lib/security/content';
 
 export const dynamic = 'force-dynamic';
+
+function invalidateSettingsCache() {
+  revalidateTag('site-settings', 'max');
+}
 
 export default async function AdminSettingsPage() {
   const settings = await db.setting.findMany();
@@ -47,6 +51,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل الحفظ' };
@@ -81,6 +86,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل حفظ إعدادات الهيرو' };
@@ -103,6 +109,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل حفظ محتوى الصفحة الرئيسية' };
@@ -132,6 +139,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل حفظ روابط التواصل' };
@@ -162,6 +170,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل حفظ إعدادات الـ SEO' };
@@ -191,6 +200,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل الحفظ' };
@@ -217,6 +227,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل الحفظ' };
@@ -239,6 +250,7 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/robots.txt');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'فشل الحفظ' };

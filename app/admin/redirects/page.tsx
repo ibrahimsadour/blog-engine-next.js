@@ -5,6 +5,7 @@ import {
   getSafeRedirectTarget,
   normalizeInternalRedirectPath,
 } from '@/lib/security/redirect';
+import { invalidateRedirectRulesCache } from '@/lib/redirect-rules';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export default async function RedirectsAdminPage() {
       update: { targetPath, statusCode },
       create: { sourcePath, targetPath, statusCode },
     });
+    invalidateRedirectRulesCache();
 
     revalidatePath('/admin/redirects');
   }
@@ -46,6 +48,7 @@ export default async function RedirectsAdminPage() {
 
     const id = formData.get('id') as string;
     await db.redirect.delete({ where: { id } });
+    invalidateRedirectRulesCache();
     revalidatePath('/admin/redirects');
   }
 

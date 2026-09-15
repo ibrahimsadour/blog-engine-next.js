@@ -73,6 +73,7 @@ model Article {
   @@index([slug])
   @@index([categoryId])
   @@index([authorId])
+  @@index([isPublished, noIndex, publishedAt])
 }
 
 model Page {
@@ -98,6 +99,7 @@ model Page {
   updatedAt DateTime @updatedAt
 
   @@index([slug])
+  @@index([isPublished, noIndex, updatedAt])
 }
 
 model Setting {
@@ -139,6 +141,8 @@ model City {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   cityServices CityServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model Service {
@@ -156,6 +160,8 @@ model Service {
   updatedAt    DateTime             @updatedAt
   cityServices CityServiceContent[]
   carServices  CarServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model CityServiceContent {
@@ -204,6 +210,8 @@ model Car {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   carServices CarServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model CarServiceContent {

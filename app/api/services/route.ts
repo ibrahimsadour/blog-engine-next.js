@@ -18,7 +18,12 @@ export async function POST(request: Request) {
       const file = (await request.formData()).get('file');
       if (!(file instanceof File)) return NextResponse.json({ error: 'ملف Excel مطلوب', code: 'FILE_REQUIRED' }, { status: 400 });
       const items = validateDirectoryRows(await readXlsxRows(file), 'الخدمة', false);
-      await db.$transaction(async (tx) => { for (const item of items) await tx.service.upsert({ where: { slug: item.slug }, update: item, create: item }); });
+      await db.$transaction(async (tx) => {
+        const existing = await tx.service.findMany({ where: { slug: { in: items.map((item) => item.slug) } }, select: { slug: true } });
+        const existingSlugs = new Set(existing.map((item) => item.slug));
+        await tx.service.createMany({ data: items.filter((item) => !existingSlugs.has(item.slug)), skipDuplicates: true });
+        await Promise.all(items.filter((item) => existingSlugs.has(item.slug)).map((item) => tx.service.update({ where: { slug: item.slug }, data: item })));
+      });
       revalidateDirectory('service');
       return NextResponse.json({ success: true, count: items.length });
     }

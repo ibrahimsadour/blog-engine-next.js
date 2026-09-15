@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { buildSiteUrl, escapeXml, getSiteUrl } from '@/lib/site-url';
+import { logDatabaseError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,9 @@ export async function GET() {
       select: { title: true, slug: true, featuredImage: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
     });
-  } catch {}
+  } catch (error) {
+    logDatabaseError('sitemap.articles', error);
+  }
 
   const entries = articles.map((item) => {
     let imageXml = '';

@@ -1,27 +1,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
+import { getNavigationData } from '@/lib/navigation';
 
 export default async function Footer() {
   const [
     { siteName, siteLogo, phoneNumber, footerDescription, footerContactText },
-    categories,
-    footerPages,
+    navigation,
   ] = await Promise.all([
     getSiteSettings(),
-    db.category.findMany({
-      take: 6,
-      orderBy: { name: 'asc' },
-    }),
-    db.page.findMany({
-      where: {
-        isPublished: true,
-        showInFooter: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    }),
+    getNavigationData(),
   ]);
+  const { footerCategories: categories, footerPages } = navigation;
 
   return (
     <footer className="border-t border-gray-100 bg-gray-900 py-12 text-gray-300">

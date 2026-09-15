@@ -1,27 +1,15 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
+import { getNavigationData } from '@/lib/navigation';
 
 export default async function Navbar() {
-  const [{ siteName, siteLogo, phoneNumber }, categories, headerPages] =
+  const [{ siteName, siteLogo, phoneNumber }, navigation] =
     await Promise.all([
       getSiteSettings(),
-      db.category.findMany({
-        where: {
-          showInHeader: true, // <-- عرض التصنيفات المفعل إظهارها في الهيدر فقط
-        },
-        take: 4,
-        orderBy: { name: 'asc' },
-      }),
-      db.page.findMany({
-        where: {
-          isPublished: true,
-          showInHeader: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      }),
+      getNavigationData(),
     ]);
+  const { headerCategories: categories, headerPages } = navigation;
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-md">

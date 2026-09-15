@@ -18,6 +18,7 @@ import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { isAdminAuthenticated } from '@/lib/auth/authorization';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
+import { getSiteSettings } from '@/lib/settings';
 
 export const revalidate = 3600;
 
@@ -83,31 +84,8 @@ function injectHeadingIds(html: string): {
 }
 
 async function getSiteConfig() {
-  try {
-    const settings = await db.setting.findMany();
-    const settingsMap = Object.fromEntries(
-      settings.map((s) => [s.key.trim().toLowerCase(), s.value?.trim() || ''])
-    );
-
-    const phone =
-      settingsMap['phone_number'] ||
-      settingsMap['phone'] ||
-      settingsMap['site_phone'] ||
-      settingsMap['contact_phone'] ||
-      settingsMap['cta_phone'] ||
-      settingsMap['mobile'] ||
-      '';
-
-    const siteName =
-      settingsMap['site_name'] ||
-      settingsMap['sitename'] ||
-      settingsMap['title'] ||
-      'أوتو كراج';
-
-    return { phone, siteName };
-  } catch {
-    return { phone: '', siteName: 'أوتو كراج' };
-  }
+  const settings = await getSiteSettings();
+  return { phone: settings.phoneNumber, siteName: settings.siteName };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
