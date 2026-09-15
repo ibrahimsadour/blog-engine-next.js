@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import EditArticleForm from './EditArticleForm';
 
@@ -29,7 +29,7 @@ export default async function EditArticlePage({
 
   async function updateArticleAction(formData: FormData) {
     'use server';
-    await requireAdmin();
+    await requireAdminAction();
 
     const title = (formData.get('title') as string)?.trim();
     const slug = (formData.get('slug') as string)?.trim();

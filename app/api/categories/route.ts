@@ -23,7 +23,7 @@ export async function GET() {
 
 // إنشاء تصنيف جديد
 export async function POST(request: NextRequest) {
-  const unauthorized = await authorizeAdminApiRequest();
+  const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
   try {

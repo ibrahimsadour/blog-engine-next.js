@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 
 function sanitizeSlug(text: string): string {
@@ -15,7 +15,7 @@ function sanitizeSlug(text: string): string {
 }
 
 export async function deleteArticleAction(id: string) {
-  await requireAdmin();
+  await requireAdminAction();
 
   try {
     await db.article.delete({
@@ -30,7 +30,7 @@ export async function deleteArticleAction(id: string) {
 }
 
 export async function createArticleAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
@@ -94,7 +94,7 @@ export async function createArticleAction(formData: FormData) {
 }
 
 export async function updateArticleAction(id: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
@@ -158,7 +158,7 @@ export async function updateArticleAction(id: string, formData: FormData) {
 }
 
 export async function saveCityServiceContentAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const cityId = (formData.get('cityId') as string) || '';
   const serviceId = (formData.get('serviceId') as string) || '';
@@ -195,7 +195,7 @@ export async function saveCityServiceContentAction(formData: FormData) {
 }
 
 export async function saveGlobalServiceTemplateAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = (formData.get('descTemplate') as string) || '';
@@ -237,7 +237,7 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   revalidatePath('/admin/service-templates');
 }
 export async function saveCarServiceContentAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const carId = (formData.get('carId') as string) || '';
   const serviceId = (formData.get('serviceId') as string) || '';
@@ -274,7 +274,7 @@ export async function saveCarServiceContentAction(formData: FormData) {
 }
 
 export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminAction();
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = (formData.get('descTemplate') as string) || '';

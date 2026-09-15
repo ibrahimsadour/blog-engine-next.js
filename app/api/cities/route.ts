@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await authorizeAdminApiRequest();
+  const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
   try {

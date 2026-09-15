@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -14,7 +14,7 @@ export default async function NewArticlePage() {
 
   async function createArticleAction(formData: FormData) {
     'use server';
-    await requireAdmin();
+    await requireAdminAction();
 
     const title = (formData.get('title') as string)?.trim();
     let slug = (formData.get('slug') as string)?.trim();

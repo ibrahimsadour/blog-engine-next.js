@@ -1,11 +1,12 @@
 import { cache } from 'react';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
 } from '@/lib/auth/session';
+import { isTrustedRequestOrigin } from '@/lib/auth/origin';
 
 export interface AdminSession {
   role: 'admin';
@@ -36,9 +37,31 @@ export async function requireAdmin(): Promise<AdminSession> {
   return session;
 }
 
-export async function authorizeAdminApiRequest(): Promise<NextResponse | null> {
+export async function requireAdminAction(): Promise<AdminSession> {
+  const session = await requireAdmin();
+
+  if (!isTrustedRequestOrigin(await headers())) {
+    throw new Error('Untrusted request origin');
+  }
+
+  return session;
+}
+
+export async function authorizeAdminApiRequest(
+  request: Request
+): Promise<NextResponse | null> {
   if (await isAdminAuthenticated()) {
-    return null;
+    if (isTrustedRequestOrigin(request.headers)) {
+      return null;
+    }
+
+    return NextResponse.json(
+      { error: 'مصدر الطلب غير موثوق' },
+      {
+        status: 403,
+        headers: { 'Cache-Control': 'no-store' },
+      }
+    );
   }
 
   return NextResponse.json(

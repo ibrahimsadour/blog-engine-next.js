@@ -5,7 +5,7 @@ import { db } from '../../../lib/db';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 
 export async function POST(request: NextRequest) {
-  const unauthorized = await authorizeAdminApiRequest();
+  const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
   try {

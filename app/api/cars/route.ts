@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await authorizeAdminApiRequest();
+  const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
   try {
@@ -76,8 +76,8 @@ const contentType = request.headers.get('content-type') || '';
   }
 }
 
-export async function DELETE() {
-  const unauthorized = await authorizeAdminApiRequest();
+export async function DELETE(request: Request) {
+  const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
 
   try {

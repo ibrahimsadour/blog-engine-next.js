@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdmin, requireAdminAction } from '@/lib/auth/authorization';
 
 export default async function AdminLayout({
   children,
@@ -13,6 +13,8 @@ export default async function AdminLayout({
 
   async function logoutAction() {
     'use server';
+    await requireAdminAction();
+
     const cookieStore = await cookies();
     cookieStore.delete(ADMIN_SESSION_COOKIE);
     redirect('/login');

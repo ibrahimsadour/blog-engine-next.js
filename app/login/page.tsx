@@ -12,6 +12,7 @@ import {
   recordFailedLogin,
 } from '@/lib/auth/login-rate-limit';
 import { verifyAdminPassword } from '@/lib/auth/password';
+import { assertTrustedRequestOrigin } from '@/lib/auth/origin';
 
 export default async function LoginPage({
   searchParams,
@@ -25,6 +26,8 @@ export default async function LoginPage({
     'use server';
 
     const requestHeaders = await headers();
+    assertTrustedRequestOrigin(requestHeaders);
+
     const clientKey = await createLoginRateLimitKey(requestHeaders);
     const currentLimit = await checkLoginRateLimit(clientKey);
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function AdminDashboard() {
   // دالة الحذف المباشرة من السيرفر
   async function deleteArticle(formData: FormData) {
     'use server';
-    await requireAdmin();
+    await requireAdminAction();
 
     const id = formData.get('id') as string;
     if (!id) return;

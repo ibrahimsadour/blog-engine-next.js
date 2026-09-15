@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import PageForm from '@/components/PageForm';
 
@@ -23,7 +23,7 @@ export default async function EditAdminPage({ params }: EditPageAdminProps) {
 
   async function updatePageAction(formData: FormData) {
     'use server';
-    await requireAdmin();
+    await requireAdminAction();
 
     const title = (formData.get('title') as string)?.trim();
     const slug = (formData.get('slug') as string)?.trim().toLowerCase();
