@@ -4,6 +4,7 @@ import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
 } from '@/lib/auth/session';
+import { getSafeRedirectTarget } from '@/lib/security/redirect';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -45,13 +46,15 @@ export async function middleware(request: NextRequest) {
     if (res.ok) {
       const data = await res.json();
       if (data?.destination) {
-        const destination = data.destination.startsWith('http')
-          ? data.destination
-          : new URL(data.destination, request.url).toString();
+        const safeTarget = getSafeRedirectTarget(data.destination, origin);
 
-        return NextResponse.redirect(destination, {
-          status: data.permanent ? 301 : 302,
-        });
+        if (safeTarget) {
+          const destination = new URL(safeTarget, request.url);
+
+          return NextResponse.redirect(destination, {
+            status: data.permanent ? 301 : 302,
+          });
+        }
       }
     }
   } catch {}

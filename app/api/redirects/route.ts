@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getSafeRedirectTarget } from '@/lib/security/redirect';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +27,17 @@ export async function GET(request: Request) {
     });
 
     if (redirectRule) {
+      const destination = getSafeRedirectTarget(
+        redirectRule.targetPath,
+        new URL(request.url).origin
+      );
+
+      if (!destination) {
+        return NextResponse.json({ destination: null }, { status: 404 });
+      }
+
       return NextResponse.json({
-        destination: redirectRule.targetPath,
+        destination,
         permanent: redirectRule.statusCode === 301,
       });
     }

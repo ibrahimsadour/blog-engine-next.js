@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { getSafeRedirectTarget } from '@/lib/security/redirect';
 
 export default async function NotFound() {
   const headersList = await headers();
@@ -30,7 +31,14 @@ export default async function NotFound() {
     });
 
     if (rule) {
-      redirect(rule.targetPath);
+      const safeTarget = getSafeRedirectTarget(
+        rule.targetPath,
+        new URL(headerUrl).origin
+      );
+
+      if (safeTarget) {
+        redirect(safeTarget);
+      }
     }
   }
 
