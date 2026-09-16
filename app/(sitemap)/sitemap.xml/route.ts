@@ -1,38 +1,29 @@
 import { NextResponse } from 'next/server';
 import { escapeXml, getSiteUrl } from '@/lib/site-url';
+import { isAutomotiveSite } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const baseUrl = getSiteUrl();
   const now = new Date().toISOString();
+  const sitemap = (path: string) => `  <sitemap>
+    <loc>${escapeXml(`${baseUrl}/${path}`)}</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>`;
+
+  const entries = [
+    sitemap('page-sitemap.xml'),
+    sitemap('post-sitemap.xml'),
+    sitemap('category-sitemap.xml'),
+    sitemap('directory-sitemap.xml'),
+    sitemap('city-service-sitemap.xml'),
+    ...(isAutomotiveSite() ? [sitemap('car-service-sitemap.xml')] : []),
+  ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/page-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/post-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/category-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/directory-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/city-service-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${escapeXml(`${baseUrl}/car-service-sitemap.xml`)}</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
+${entries.join('\n')}
 </sitemapindex>`;
 
   return new NextResponse(xml, {
