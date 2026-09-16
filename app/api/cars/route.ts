@@ -5,13 +5,20 @@ import { assertTopLevelSlugAvailable, InputValidationError, publicError, validat
 import { validateDirectoryRows } from '@/lib/directory-import';
 import { readXlsxRows } from '@/lib/import-spreadsheet';
 import { revalidateDirectory } from '@/lib/revalidate-directory';
+import { isAutomotiveSite } from '@/lib/site-profile';
+
+function automotiveFeatureDisabled() {
+  return NextResponse.json({ error: 'ميزة السيارات غير مفعلة لهذا الموقع', code: 'FEATURE_DISABLED' }, { status: 404 });
+}
 
 export async function GET() {
+  if (!isAutomotiveSite()) return automotiveFeatureDisabled();
   try { return NextResponse.json(await db.car.findMany({ orderBy: { sortOrder: 'asc' } })); }
   catch { return NextResponse.json({ error: 'تعذر جلب السيارات', code: 'DATABASE_ERROR' }, { status: 500 }); }
 }
 
 export async function POST(request: Request) {
+  if (!isAutomotiveSite()) return automotiveFeatureDisabled();
   const unauthorized = await authorizeAdminApiRequest(request); if (unauthorized) return unauthorized;
   try {
     if ((request.headers.get('content-type') || '').includes('multipart/form-data')) {
