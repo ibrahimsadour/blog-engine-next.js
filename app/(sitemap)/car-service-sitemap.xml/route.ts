@@ -1,10 +1,13 @@
 import { db } from '@/lib/db';
 import { buildSiteUrl, latestDate, sitemapUrlEntry } from '@/lib/site-url';
+import { isAutomotiveSite } from '@/lib/site-profile';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  if (!isAutomotiveSite()) return new NextResponse('Not Found', { status: 404 });
+
   const [cars, services, template] = await Promise.all([
     db.car.findMany({
       where: { isActive: true },
