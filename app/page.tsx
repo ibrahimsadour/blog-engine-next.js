@@ -7,6 +7,7 @@ import CallToAction from '@/components/CallToAction';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { getSiteUrl } from '@/lib/site-url';
+import { isAutomotiveSite } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,7 +88,7 @@ export default async function HomePage() {
   // 2. LocalBusiness Schema
   const localBusinessSchema = {
     '@context': 'https://schema.org',
-    '@type': 'HomeAndConstructionBusiness',
+    '@type': isAutomotiveSite() ? 'AutoRepair' : 'HomeAndConstructionBusiness',
     name: settings.siteName,
     description: settings.homeMetaDesc || settings.footerDescription,
     url: siteUrl,
