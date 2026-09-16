@@ -19,6 +19,7 @@ import { isAdminAuthenticated } from '@/lib/auth/authorization';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
 import { getSiteSettings } from '@/lib/settings';
+import { isAutomotiveSite } from '@/lib/site-profile';
 
 export const revalidate = 3600;
 
@@ -118,12 +119,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 1.5. التحقق من السيارات
-  const car = await db.car.findFirst({
+  const car = isAutomotiveSite()
+    ? await db.car.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
       isActive: true,
     },
-  });
+  })
+    : null;
 
   if (car) {
     const title = parseContentVariables(car.metaTitle || `خدمات صيانة وإصلاح سيارات ${car.name}`, phone, siteName);
@@ -319,12 +322,14 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   }
 
   // 1.5. فحص ما إذا كان الـ slug يعود لسيارة (Car)
-  const car = await db.car.findFirst({
+  const car = isAutomotiveSite()
+    ? await db.car.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
       isActive: true,
     },
-  });
+  })
+    : null;
 
   if (car) {
     const services = await db.service.findMany({
