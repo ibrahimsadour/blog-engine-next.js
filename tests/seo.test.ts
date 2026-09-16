@@ -3,9 +3,12 @@ import test from 'node:test';
 import { generateArticleSchema, generateBreadcrumbSchema } from '../lib/schema';
 import { buildSiteUrl, encodeSlugSegment, escapeXml, latestDate, sitemapUrlEntry, trustedCanonicalUrl } from '../lib/site-url';
 
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://autogarag.net';
+const siteOrigin = new URL(configuredSiteUrl).origin;
+
 test('sitemap paths normalize and encode every slug segment', () => {
   assert.equal(encodeSlugSegment('  خدمة سيارات & سريعة  '), '%D8%AE%D8%AF%D9%85%D8%A9-%D8%B3%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA-%D8%B3%D8%B1%D9%8A%D8%B9%D8%A9');
-  assert.equal(buildSiteUrl('مدينة الكويت', 'فحص & صيانة'), 'https://autogarag.net/%D9%85%D8%AF%D9%8A%D9%86%D8%A9-%D8%A7%D9%84%D9%83%D9%88%D9%8A%D8%AA/%D9%81%D8%AD%D8%B5-%D8%B5%D9%8A%D8%A7%D9%86%D8%A9');
+  assert.equal(buildSiteUrl('مدينة الكويت', 'فحص & صيانة'), `${siteOrigin}/%D9%85%D8%AF%D9%8A%D9%86%D8%A9-%D8%A7%D9%84%D9%83%D9%88%D9%8A%D8%AA/%D9%81%D8%AD%D8%B5-%D8%B5%D9%8A%D8%A7%D9%86%D8%A9`);
 });
 
 test('XML escaping covers URLs and text values', () => {
@@ -13,8 +16,8 @@ test('XML escaping covers URLs and text values', () => {
 });
 
 test('canonical URLs remain on the configured site and drop query fragments', () => {
-  assert.equal(trustedCanonicalUrl('https://evil.example/post', '/safe-post'), 'https://autogarag.net/safe-post');
-  assert.equal(trustedCanonicalUrl('/safe-post?tracking=1#part', '/fallback'), 'https://autogarag.net/safe-post');
+  assert.equal(trustedCanonicalUrl('https://evil.example/post', '/safe-post'), `${siteOrigin}/safe-post`);
+  assert.equal(trustedCanonicalUrl('/safe-post?tracking=1#part', '/fallback'), `${siteOrigin}/safe-post`);
 });
 
 test('article schema uses publishedAt and one stable publisher organization', () => {
@@ -24,12 +27,12 @@ test('article schema uses publishedAt and one stable publisher organization', ()
     createdAt: new Date('2025-01-01T00:00:00.000Z'),
     publishedAt,
     updatedAt: new Date('2026-02-01T00:00:00.000Z'),
-  }, 'https://autogarag.net/article');
+  }, `${siteOrigin}/article`);
 
   assert.equal(schema.datePublished, publishedAt.toISOString());
   assert.equal(schema.publisher['@type'], 'Organization');
-  assert.equal(schema.publisher.logo.url, 'https://autogarag.net/logo.png');
-  assert.equal(schema.image[0], 'https://autogarag.net/images/og-default.jpg');
+  assert.equal(schema.publisher.logo.url, `${siteOrigin}/logo.png`);
+  assert.equal(schema.image[0], `${siteOrigin}/images/og-default.jpg`);
 });
 
 test('breadcrumb schema rejects an external URL', () => {
