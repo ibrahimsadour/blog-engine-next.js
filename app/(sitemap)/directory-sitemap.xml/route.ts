@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { buildSiteUrl, sitemapUrlEntry } from '@/lib/site-url';
+import { isAutomotiveSite } from '@/lib/site-profile';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const [cities, cars] = await Promise.all([
     db.city.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
-    db.car.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
+    isAutomotiveSite()
+      ? db.car.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } })
+      : Promise.resolve([]),
   ]);
   const entries = [
     ...cities.map((item) => sitemapUrlEntry(buildSiteUrl(item.slug), item.updatedAt, '0.8')),
