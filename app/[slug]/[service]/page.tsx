@@ -6,6 +6,7 @@ import CarServiceView from '@/components/CarServiceView';
 import { buildSiteUrl } from '@/lib/site-url';
 import { cache } from 'react';
 import { getSiteSettings } from '@/lib/settings';
+import { isAutomotiveSite } from '@/lib/site-profile';
 
 type Props = {
   params: Promise<{ slug: string; service: string }>;
@@ -14,7 +15,9 @@ type Props = {
 const getServiceRouteData = cache(async (slug: string, serviceSlug: string) => {
   const [city, car, service] = await Promise.all([
     db.city.findUnique({ where: { slug, isActive: true } }),
-    db.car.findUnique({ where: { slug, isActive: true } }),
+    isAutomotiveSite()
+      ? db.car.findUnique({ where: { slug, isActive: true } })
+      : Promise.resolve(null),
     db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
   ]);
   if ((!city && !car) || !service) return { city, car, service, customContent: null, template: null };
