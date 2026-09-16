@@ -10,7 +10,7 @@ on:
       - 'scripts/**'
   push:
     branches:
-      - fix/signed-admin-session
+      - main
     paths:
       - '.github/workflows/database-migrations.yml'
       - 'lib/database-url.ts'
