@@ -7,24 +7,19 @@ import { getEditTargetAction, logoutAdminAction } from '@/lib/admin-bar';
 
 export default function AdminBar() {
   const pathname = usePathname();
-  const [target, setTarget] = useState<{ url: string; label: string; isHidden?: boolean } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<{ pathname: string; target: { url: string; label: string; isHidden?: boolean } | null } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-
     getEditTargetAction(pathname)
       .then((res) => {
         if (isMounted) {
-          setTarget(res);
-          setLoading(false);
+          setResult({ pathname, target: res });
         }
       })
       .catch(() => {
         if (isMounted) {
-          setTarget(null);
-          setLoading(false);
+          setResult({ pathname, target: null });
         }
       });
 
@@ -33,7 +28,10 @@ export default function AdminBar() {
     };
   }, [pathname]);
 
-  if (!target || target.isHidden) {
+  const loading = result?.pathname !== pathname;
+  const target = loading ? null : result.target;
+
+  if (!loading && (!target || target.isHidden)) {
     return null;
   }
 
@@ -53,7 +51,7 @@ export default function AdminBar() {
         {loading ? (
           <span className="animate-pulse text-gray-500">جاري التحقق...</span>
         ) : (
-          target.url && (
+          target && target.url && (
             <Link
               href={target.url}
               className="flex items-center gap-1.5 rounded-md bg-blue-600 px-2.5 py-1 text-white shadow-xs transition hover:bg-blue-700 active:scale-95"

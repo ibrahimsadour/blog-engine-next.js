@@ -1,7 +1,10 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
+import { validateCustomServiceContent } from '@/lib/content-input';
+import { sanitizeContentHtml } from '@/lib/security/content';
 
 function sanitizeSlug(text: string): string {
   return (text || '')
@@ -14,6 +17,8 @@ function sanitizeSlug(text: string): string {
 }
 
 export async function deleteArticleAction(id: string) {
+  await requireAdminAction();
+
   try {
     await db.article.delete({
       where: { id },
@@ -21,12 +26,14 @@ export async function deleteArticleAction(id: string) {
 
     revalidatePath('/admin');
     revalidatePath('/');
-  } catch (error) {
+  } catch {
     throw new Error('تعذر حذف المقال من قاعدة البيانات');
   }
 }
 
 export async function createArticleAction(formData: FormData) {
+  await requireAdminAction();
+
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
   const slug = sanitizeSlug(rawSlug);
@@ -89,6 +96,8 @@ export async function createArticleAction(formData: FormData) {
 }
 
 export async function updateArticleAction(id: string, formData: FormData) {
+  await requireAdminAction();
+
   const title = (formData.get('title') as string) || '';
   const rawSlug = (formData.get('slug') as string) || '';
   const slug = sanitizeSlug(rawSlug);
@@ -151,16 +160,10 @@ export async function updateArticleAction(id: string, formData: FormData) {
 }
 
 export async function saveCityServiceContentAction(formData: FormData) {
-  const cityId = (formData.get('cityId') as string) || '';
-  const serviceId = (formData.get('serviceId') as string) || '';
-  const customTitle = (formData.get('customTitle') as string) || null;
-  const customDescription = (formData.get('customDescription') as string) || null;
-  const metaTitle = (formData.get('metaTitle') as string) || null;
-  const metaDesc = (formData.get('metaDesc') as string) || null;
+  await requireAdminAction();
 
-  if (!cityId || !serviceId) {
-    throw new Error('الرجاء تحديد المدينة والخدمة');
-  }
+  const { ownerId: cityId, serviceId, customTitle, customDescription, metaTitle, metaDesc } =
+    validateCustomServiceContent({ ownerId: formData.get('cityId'), serviceId: formData.get('serviceId'), customTitle: formData.get('customTitle'), customDescription: formData.get('customDescription'), metaTitle: formData.get('metaTitle'), metaDesc: formData.get('metaDesc') }, 'city');
 
   await db.cityServiceContent.upsert({
     where: {
@@ -183,15 +186,23 @@ export async function saveCityServiceContentAction(formData: FormData) {
   });
 
   revalidatePath('/admin/city-services');
+  revalidatePath('/city-service-sitemap.xml');
+  const [city, service] = await Promise.all([
+    db.city.findUnique({ where: { id: cityId }, select: { slug: true } }),
+    db.service.findUnique({ where: { id: serviceId }, select: { slug: true } }),
+  ]);
+  if (city && service) revalidatePath(`/${city.slug}/${service.slug}`);
 }
 
 export async function saveGlobalServiceTemplateAction(formData: FormData) {
+  await requireAdminAction();
+
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
-  const descTemplate = (formData.get('descTemplate') as string) || '';
-  const introTemplates = (formData.get('introTemplates') as string) || '';
-  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
+  const introTemplates = sanitizeContentHtml(formData.get('introTemplates'));
+  const outroTemplates = sanitizeContentHtml(formData.get('outroTemplates'));
   const faqTemplates = (formData.get('faqTemplates') as string) || '';
-  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const neighborhoodTemplates = sanitizeContentHtml(formData.get('neighborhoodTemplates'));
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
   const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
   const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
@@ -224,18 +235,13 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
   }
 
   revalidatePath('/admin/service-templates');
+  revalidatePath('/city-service-sitemap.xml');
 }
 export async function saveCarServiceContentAction(formData: FormData) {
-  const carId = (formData.get('carId') as string) || '';
-  const serviceId = (formData.get('serviceId') as string) || '';
-  const customTitle = (formData.get('customTitle') as string) || null;
-  const customDescription = (formData.get('customDescription') as string) || null;
-  const metaTitle = (formData.get('metaTitle') as string) || null;
-  const metaDesc = (formData.get('metaDesc') as string) || null;
+  await requireAdminAction();
 
-  if (!carId || !serviceId) {
-    throw new Error('الرجاء تحديد السيارة والخدمة');
-  }
+  const { ownerId: carId, serviceId, customTitle, customDescription, metaTitle, metaDesc } =
+    validateCustomServiceContent({ ownerId: formData.get('carId'), serviceId: formData.get('serviceId'), customTitle: formData.get('customTitle'), customDescription: formData.get('customDescription'), metaTitle: formData.get('metaTitle'), metaDesc: formData.get('metaDesc') }, 'car');
 
   await db.carServiceContent.upsert({
     where: {
@@ -258,15 +264,23 @@ export async function saveCarServiceContentAction(formData: FormData) {
   });
 
   revalidatePath('/admin/car-services');
+  revalidatePath('/car-service-sitemap.xml');
+  const [car, service] = await Promise.all([
+    db.car.findUnique({ where: { id: carId }, select: { slug: true } }),
+    db.service.findUnique({ where: { id: serviceId }, select: { slug: true } }),
+  ]);
+  if (car && service) revalidatePath(`/${car.slug}/${service.slug}`);
 }
 
 export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
+  await requireAdminAction();
+
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
-  const descTemplate = (formData.get('descTemplate') as string) || '';
-  const introTemplates = (formData.get('introTemplates') as string) || '';
-  const outroTemplates = (formData.get('outroTemplates') as string) || '';
+  const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
+  const introTemplates = sanitizeContentHtml(formData.get('introTemplates'));
+  const outroTemplates = sanitizeContentHtml(formData.get('outroTemplates'));
   const faqTemplates = (formData.get('faqTemplates') as string) || '';
-  const neighborhoodTemplates = (formData.get('neighborhoodTemplates') as string) || '';
+  const neighborhoodTemplates = sanitizeContentHtml(formData.get('neighborhoodTemplates'));
   const testimonialTemplates = (formData.get('testimonialTemplates') as string) || '';
   const metaTitleTemplate = (formData.get('metaTitleTemplate') as string) || '';
   const metaDescTemplate = (formData.get('metaDescTemplate') as string) || '';
@@ -299,4 +313,5 @@ export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
   }
 
   revalidatePath('/admin/car-service-templates');
+  revalidatePath('/car-service-sitemap.xml');
 }

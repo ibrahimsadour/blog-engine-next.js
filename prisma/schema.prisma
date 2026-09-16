@@ -23,87 +23,99 @@ model Author {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  showInHeader  Boolean   @default(true) 
-  description String?   @db.Text
-  metaTitle   String?
-  metaDesc    String?
-  articles    Article[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  showInHeader Boolean   @default(true)
+  description  String?   @db.Text
+  metaTitle    String?
+  metaDesc     String?
+  articles     Article[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Article {
-  id             String    @id @default(cuid())
-  title          String
-  slug           String    @unique
-  content        String    @db.Text
-  excerpt        String?   @db.Text
-  featuredImage  String?
-  altText        String?
+  id            String  @id @default(cuid())
+  title         String
+  slug          String  @unique
+  content       String  @db.Text
+  excerpt       String? @db.Text
+  featuredImage String?
+  altText       String?
 
   // Technical & Local SEO
-  metaTitle      String?
-  metaDesc       String?
-  canonicalUrl   String?
-  targetKeyword  String?
-  targetArea     String?
-  faqs           Json?
-  
+  metaTitle     String?
+  metaDesc      String?
+  canonicalUrl  String?
+  targetKeyword String?
+  targetArea    String?
+  faqs          Json?
+
   // Robots Directives
-  noIndex        Boolean   @default(false)
-  noFollow       Boolean   @default(false)
+  noIndex  Boolean @default(false)
+  noFollow Boolean @default(false)
 
   // Status & Publishing
-  isPublished    Boolean   @default(false)
-  publishedAt    DateTime?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
 
   // Relations
-  category       Category  @relation(fields: [categoryId], references: [id])
-  categoryId     String
-  
-  author         Author?   @relation(fields: [authorId], references: [id])
-  authorId       String?
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  author   Author? @relation(fields: [authorId], references: [id])
+  authorId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slug])
   @@index([categoryId])
   @@index([authorId])
+  @@index([isPublished, noIndex, publishedAt])
 }
 
 model Page {
-  id           String   @id @default(cuid())
-  title        String
-  slug         String   @unique
-  content      String   @db.Text
-  
+  id      String @id @default(cuid())
+  title   String
+  slug    String @unique
+  content String @db.Text
+
   // SEO
-  metaTitle    String?
-  metaDesc     String?  @db.Text
-  
+  metaTitle String?
+  metaDesc  String? @db.Text
+
   // Robots Directives
-  noIndex      Boolean  @default(false)
-  noFollow     Boolean  @default(false)
+  noIndex  Boolean @default(false)
+  noFollow Boolean @default(false)
 
   // Status & Visibility
-  isPublished  Boolean  @default(true)
-  showInHeader Boolean  @default(false)
-  showInFooter Boolean  @default(true)
+  isPublished  Boolean @default(true)
+  showInHeader Boolean @default(false)
+  showInFooter Boolean @default(true)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slug])
+  @@index([isPublished, noIndex, updatedAt])
 }
 
 model Setting {
   key       String   @id
   value     String?  @db.Text
   updatedAt DateTime @updatedAt
+}
+
+model LoginRateLimit {
+  key             String    @id
+  attempts        Int       @default(0)
+  windowStartedAt DateTime  @default(now())
+  blockedUntil    DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  @@index([updatedAt])
 }
 
 model Redirect {
@@ -129,23 +141,27 @@ model City {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   cityServices CityServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model Service {
-  id              String               @id @default(cuid())
-  name            String
-  slug            String               @unique
-  image           String?
-  description     String?              @db.Text
-  keywords        String?              @db.Text
-  metaTitle       String?              @db.Text
-  metaDesc        String?              @db.Text
-  isActive        Boolean              @default(true)
-  sortOrder       Int                  @default(0)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  cityServices    CityServiceContent[]
-  carServices CarServiceContent[]
+  id           String               @id @default(cuid())
+  name         String
+  slug         String               @unique
+  image        String?
+  description  String?              @db.Text
+  keywords     String?              @db.Text
+  metaTitle    String?              @db.Text
+  metaDesc     String?              @db.Text
+  isActive     Boolean              @default(true)
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  cityServices CityServiceContent[]
+  carServices  CarServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model CityServiceContent {
@@ -154,10 +170,10 @@ model CityServiceContent {
   serviceId         String
   city              City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  customTitle       String?              @db.Text
-  customDescription String?              @db.Text
-  metaTitle         String?              @db.Text
-  metaDesc          String?              @db.Text
+  customTitle       String?  @db.Text
+  customDescription String?  @db.Text
+  metaTitle         String?  @db.Text
+  metaDesc          String?  @db.Text
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -165,36 +181,37 @@ model CityServiceContent {
 }
 
 model GlobalServiceTemplate {
-  id                String   @id @default(cuid())
-  titleTemplate     String   @db.Text
-  descTemplate      String   @db.Text
-  introTemplates    String?  @db.Text
-  outroTemplates    String?  @db.Text
-  faqTemplates      String?  @db.Text // بنك الأسئلة الشائعة
+  id                    String   @id @default(cuid())
+  titleTemplate         String   @db.Text
+  descTemplate          String   @db.Text
+  introTemplates        String?  @db.Text
+  outroTemplates        String?  @db.Text
+  faqTemplates          String?  @db.Text // بنك الأسئلة الشائعة
   neighborhoodTemplates String?  @db.Text // بنك المعالم والأحياء المحلية
   testimonialTemplates  String?  @db.Text // بنك التقييمات والآراء المحلية
-  metaTitleTemplate String?  @db.Text
-  metaDescTemplate  String?  @db.Text
-  imageTemplates    String?  @db.Text // <-- بنك الصور الجديد
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  metaTitleTemplate     String?  @db.Text
+  metaDescTemplate      String?  @db.Text
+  imageTemplates        String?  @db.Text // <-- بنك الصور الجديد
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
-
 model Car {
-  id          String   @id @default(cuid())
+  id          String              @id @default(cuid())
   name        String
-  slug        String   @unique
-  description String?  @db.Text
-  metaTitle   String?  @db.Text
-  metaDesc    String?  @db.Text
-  keywords    String?  @db.Text
+  slug        String              @unique
+  description String?             @db.Text
+  metaTitle   String?             @db.Text
+  metaDesc    String?             @db.Text
+  keywords    String?             @db.Text
   image       String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sortOrder   Int                 @default(0)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   carServices CarServiceContent[]
+
+  @@index([isActive, sortOrder])
 }
 
 model CarServiceContent {

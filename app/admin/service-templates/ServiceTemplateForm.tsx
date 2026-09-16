@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import RichTextEditor from '@/components/RichTextEditor';
+import type { ContentTemplateData } from '@/types/admin';
 
 export default function ServiceTemplateForm({ 
   template, 
   action 
 }: { 
-  template: any; 
+  template: ContentTemplateData | null;
   action: (formData: FormData) => Promise<void> | void; 
 }) {
   const [desc, setDesc] = useState(template?.descTemplate || '');
@@ -26,7 +27,7 @@ export default function ServiceTemplateForm({
       await action(formData);
       setMessage('تم حفظ وتحديث القالب بنجاح!');
       setTimeout(() => setMessage(null), 4000);
-    } catch (error) {
+    } catch {
       setMessage('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.');
     } finally {
       setIsPending(false);

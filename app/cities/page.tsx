@@ -1,11 +1,28 @@
 import { db } from '@/lib/db';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { buildSiteUrl } from '@/lib/site-url';
+import Pagination from '@/components/Pagination';
 
-export default async function CitiesPage() {
-  const cities = await db.city.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+export const revalidate = 3600;
+
+export function generateMetadata(): Metadata {
+  return {
+    title: 'دليل المدن ومناطق الخدمة',
+    description: 'تصفح المدن والمناطق التي تتوفر فيها خدمات الصيانة والمساعدة.',
+    alternates: { canonical: buildSiteUrl('cities') },
+  };
+}
+
+const PAGE_SIZE = 24;
+
+export default async function CitiesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const requestedPage = Number((await searchParams).page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const [cities, count] = await Promise.all([
+    db.city.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    db.city.count({ where: { isActive: true } }),
+  ]);
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8">
@@ -22,6 +39,7 @@ export default async function CitiesPage() {
           </Link>
         ))}
       </div>
+      <Pagination page={page} totalPages={Math.ceil(count / PAGE_SIZE)} basePath="/cities" />
     </main>
   );
 }

@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next';
 import { db } from '@/lib/db';
+import { getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = getSiteUrl();
 
   let customRobots = '';
 
@@ -35,10 +36,11 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       if (line.toLowerCase().startsWith('sitemap:')) {
         const sm = line.split(':').slice(1).join(':').trim();
         if (sm) {
-          customSitemap = customSitemap ? (Array.isArray(customSitemap) ? [...customSitemap, sm] : [customSitemap, sm]) : sm;
+          const safeSitemap = trustedCanonicalUrl(sm, '/sitemap.xml');
+          customSitemap = customSitemap ? (Array.isArray(customSitemap) ? [...customSitemap, safeSitemap] : [customSitemap, safeSitemap]) : safeSitemap;
         }
       } else if (line.toLowerCase().startsWith('host:')) {
-        customHost = line.split(':').slice(1).join(':').trim();
+        customHost = getSiteUrl();
       } else if (line.toLowerCase().startsWith('user-agent:')) {
         if (allowList.length > 0 || disallowList.length > 0) {
           rules.push({
@@ -79,12 +81,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: ['/', '/api/media/'],
         disallow: ['/admin/', '/login', '/api/'],
       },
       {
         userAgent: 'Googlebot-Image',
-        allow: ['/uploads/', '/_next/image'],
+        allow: ['/api/media/', '/uploads/', '/_next/image'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

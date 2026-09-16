@@ -3,10 +3,12 @@ import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AdminBar from '@/components/AdminBar';
-import { db } from '@/lib/db';
 import { Toaster } from 'sonner';
+import { sanitizeCustomHeadCode } from '@/lib/security/content';
+import { getSiteUrl } from '@/lib/site-url';
+import { getSiteSettings } from '@/lib/settings';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const viewport: Viewport = {
   themeColor: '#2563eb',
@@ -16,22 +18,10 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
-  let siteName = '';
-  let siteTitle = '';
-  let siteDescription = '';
-
-  try {
-    const settings = await db.setting.findMany();
-    const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value?.trim() || '']));
-
-    siteName = settingsMap['site_name'] || settingsMap['siteName'] || '';
-    siteTitle = settingsMap['site_title'] || settingsMap['meta_title'] || siteName;
-    siteDescription = settingsMap['site_description'] || settingsMap['meta_description'] || '';
-  } catch {
-    // في حال عدم توفر الاتصال بقاعدة البيانات
-  }
+  const settings = await getSiteSettings();
+  const { siteName, siteTitle, siteDescription } = settings;
 
   return {
     metadataBase: new URL(siteUrl),
@@ -64,12 +54,14 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: siteName || undefined,
       title: siteTitle,
       description: siteDescription,
+      images: [{ url: `${siteUrl}/images/og-default.jpg`, width: 1200, height: 630 }],
     },
 
     twitter: {
       card: 'summary_large_image',
       title: siteTitle,
       description: siteDescription,
+      images: [`${siteUrl}/images/og-default.jpg`],
     },
 
     formatDetection: {
@@ -85,16 +77,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let headCode = '';
-
-  try {
-    const setting = await db.setting.findUnique({
-      where: { key: 'custom_head_code' },
-    });
-    headCode = setting?.value?.trim() || '';
-  } catch {
-    // في حال عدم توفر الاتصال مؤقتاً
-  }
+  const settings = await getSiteSettings();
+  const headCode = sanitizeCustomHeadCode(settings.headCode);
 
   return (
     <html lang="ar" dir="rtl">

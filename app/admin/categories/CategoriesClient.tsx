@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import CategoryForm, { CategoryEditData } from './CategoryForm';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CategoryItem {
   id: string;
@@ -57,8 +58,8 @@ export default function CategoriesClient({
         }
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setDeletingId(null);
     }
@@ -68,6 +69,7 @@ export default function CategoriesClient({
     <div className="grid gap-8 lg:grid-cols-3">
       {/* عمود نموذج الإضافة والتعديل */}
       <CategoryForm
+        key={editingCategory?.id ?? 'new'}
         action={saveAction}
         editCategory={editingCategory}
         onCancelEdit={() => setEditingCategory(null)}

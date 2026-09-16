@@ -5,12 +5,14 @@ import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
 import CallToAction from '@/components/CallToAction';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
   const title = settings.homeMetaTitle || `${settings.siteName} | أسرع دليل خدمات وصيانة ميدانية 24 ساعة`;
   const description = settings.homeMetaDesc || settings.footerDescription || 'دليل خدمات وصيانة متكامل في الكويت على مدار الساعة بأفضل الأسعار.';
@@ -36,13 +38,13 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       locale: 'ar_KW',
       siteName: settings.siteName,
-      images: settings.heroBgImage ? [{ url: settings.heroBgImage }] : [],
+      images: [{ url: settings.heroBgImage || `${siteUrl}/images/og-default.jpg` }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: settings.heroBgImage ? [settings.heroBgImage] : [],
+      images: [settings.heroBgImage || `${siteUrl}/images/og-default.jpg`],
     },
   };
 }
@@ -66,7 +68,7 @@ export default async function HomePage() {
     }),
   ]);
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = getSiteUrl();
 
   // 1. WebSite Schema
   const websiteSchema = {
@@ -106,11 +108,11 @@ export default async function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50 pb-24 md:pb-12">
@@ -207,7 +209,7 @@ export default async function HomePage() {
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-8">
                 <div
                   className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
-                  dangerouslySetInnerHTML={{ __html: settings.homeCustomContent }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(settings.homeCustomContent) }}
                 />
               </div>
             </section>
@@ -256,8 +258,8 @@ export default async function HomePage() {
                         </p>
                       )}
                       <div className="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-400">
-                        <time dateTime={article.createdAt.toISOString()}>
-                          {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                        <time dateTime={(article.publishedAt || article.createdAt).toISOString()}>
+                          {new Date(article.publishedAt || article.createdAt).toLocaleDateString('ar-EG', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

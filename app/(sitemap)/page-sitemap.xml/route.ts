@@ -1,21 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { buildSiteUrl, getSiteUrl, sitemapUrlEntry } from '@/lib/site-url';
+import { logDatabaseError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-function cleanSlug(slug: string): string {
-  const clean = (slug || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u0600-\u06FF\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return encodeURI(clean);
-}
-
 export async function GET() {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = getSiteUrl();
   const now = new Date().toISOString();
 
   let pages: { slug: string; updatedAt: Date }[] = [];
@@ -31,7 +22,9 @@ export async function GET() {
       },
       orderBy: { updatedAt: 'desc' },
     });
-  } catch {}
+  } catch (error) {
+    logDatabaseError('sitemap.pages', error);
+  }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -41,16 +34,10 @@ export async function GET() {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  ${sitemapUrlEntry(buildSiteUrl('cars'), new Date(now), '0.9')}
+  ${sitemapUrlEntry(buildSiteUrl('cities'), new Date(now), '0.9')}
   ${pages
-    .map(
-      (p) => `
-  <url>
-    <loc>${baseUrl}/${cleanSlug(p.slug)}</loc>
-    <lastmod>${new Date(p.updatedAt).toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`
-    )
+    .map((p) => sitemapUrlEntry(buildSiteUrl(p.slug), p.updatedAt, '0.7'))
     .join('')}
 </urlset>`;
 

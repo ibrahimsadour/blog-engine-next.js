@@ -2,15 +2,23 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { generateBreadcrumbSchema } from '@/lib/schema';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 interface CityServiceViewProps {
   city: { id: string; name: string; slug: string };
   service: { id: string; name: string; slug: string; description: string | null };
-  template: any;
+  template: ServiceTemplate | null;
   otherCities: Array<{ id: string; name: string; slug: string }>;
   otherServices: Array<{ id: string; name: string; slug: string }>;
   phone: string;
   siteName: string;
+  customContent?: { customTitle: string | null; customDescription: string | null } | null;
+}
+
+interface ServiceTemplate {
+  titleTemplate: string; descTemplate: string; introTemplates?: string | null; outroTemplates?: string | null;
+  faqTemplates?: string | null; neighborhoodTemplates?: string | null; testimonialTemplates?: string | null;
+  imageTemplates?: string | null;
 }
 
 function parseTemplate(
@@ -63,12 +71,15 @@ export default function CityServiceView({
   otherServices,
   phone,
   siteName,
+  customContent,
 }: CityServiceViewProps) {
   const seed = `city-${city.slug}-${service.slug}`;
 
   const titleList = template?.titleTemplate ? template.titleTemplate.split('---').map((s: string) => s.trim()).filter(Boolean) : [];
   const rawTitle = getStableItem(titleList, `title-${seed}`);
-  const pageTitle = rawTitle
+  const pageTitle = customContent?.customTitle
+    ? parseTemplate(customContent.customTitle, city.name, service.name, phone, siteName)
+    : rawTitle
     ? parseTemplate(rawTitle, city.name, service.name, phone, siteName)
     : `أفضل خدمات ${service.name} في ${city.name}`;
 
@@ -76,7 +87,9 @@ export default function CityServiceView({
   const rawImage = getStableItem(imageList, `image-${seed}`);
   const selectedImage = rawImage ? parseTemplate(rawImage, city.name, service.name, phone, siteName) : '';
 
-  const coreDescription = template?.descTemplate
+  const coreDescription = customContent?.customDescription
+    ? parseTemplate(customContent.customDescription, city.name, service.name, phone, siteName)
+    : template?.descTemplate
     ? parseTemplate(template.descTemplate, city.name, service.name, phone, siteName)
     : service.description || `نقدم لك أفضل خدمات ${service.name} الاحترافية في ${city.name} بجودة عالية وضمان شامل.`;
 
@@ -122,12 +135,12 @@ export default function CityServiceView({
 
   const selectedTestimonials = getStableMultiple(allTestimonials, `testimonial-${seed}`, 2);
 
-  const fullHtmlContent = `
+  const fullHtmlContent = sanitizeContentHtml(`
     ${selectedIntro ? `<div class="mb-6 text-lg font-medium">${selectedIntro}</div>` : ''}
     <div>${coreDescription}</div>
     ${selectedNeighborhood ? `<div class="my-6 p-4 bg-gray-50 rounded-lg border text-base text-gray-700">${selectedNeighborhood}</div>` : ''}
     ${selectedOutro ? `<div class="mt-6 text-lg font-medium">${selectedOutro}</div>` : ''}
-  `;
+  `);
 
   const breadcrumbItems = [
     { name: 'الرئيسية', url: '/' },
@@ -147,7 +160,7 @@ export default function CityServiceView({
     })),
   } : null;
 
-  const reviewSchema = selectedTestimonials.length > 0 ? {
+  const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
     "name": `${service.name} في ${city.name}`,
@@ -157,31 +170,18 @@ export default function CityServiceView({
       ...(phone ? { "telephone": phone } : {}),
     },
     "areaServed": { "@type": "AdministrativeArea", "name": city.name },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": selectedTestimonials.length.toString(),
-    },
-    "review": selectedTestimonials.map((t) => ({
-      "@type": "Review",
-      "author": { "@type": "Person", "name": t.name },
-      "reviewRating": { "@type": "Rating", "ratingValue": "5" },
-      "reviewBody": t.comment,
-    })),
-  } : null;
+  };
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       {faqSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
       )}
-      {reviewSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />
-      )}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceSchema) }} />
 
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
         {selectedImage && (

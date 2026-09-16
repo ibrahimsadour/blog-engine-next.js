@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,8 @@ export default async function AdminPagesList() {
 
   async function deletePage(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     const id = formData.get('id') as string;
     if (!id) return;
 
@@ -51,7 +54,7 @@ export default async function AdminPagesList() {
 
         {pages.length === 0 ? (
           <div className="p-12 text-center text-sm text-gray-500">
-            لا توجد صفحات منشأة حالياً. اضغط على "إنشاء صفحة جديدة" لإضافة صفحات مثل (من نحن، اتصل بنا، سياسة الخصوصية).
+            لا توجد صفحات منشأة حالياً. اضغط على &quot;إنشاء صفحة جديدة&quot; لإضافة صفحات مثل (من نحن، اتصل بنا، سياسة الخصوصية).
           </div>
         ) : (
           <div className="overflow-x-auto">

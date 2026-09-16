@@ -2,15 +2,23 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { generateBreadcrumbSchema } from '@/lib/schema';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 interface CarServiceViewProps {
   car: { id: string; name: string; slug: string };
   service: { id: string; name: string; slug: string; description: string | null };
-  template: any;
+  template: ServiceTemplate | null;
   otherCars: Array<{ id: string; name: string; slug: string }>;
   otherServices: Array<{ id: string; name: string; slug: string }>;
   phone: string;
   siteName: string;
+  customContent?: { customTitle: string | null; customDescription: string | null } | null;
+}
+
+interface ServiceTemplate {
+  titleTemplate: string; descTemplate: string; introTemplates?: string | null; outroTemplates?: string | null;
+  faqTemplates?: string | null; neighborhoodTemplates?: string | null; testimonialTemplates?: string | null;
+  imageTemplates?: string | null;
 }
 
 function parseCarTemplate(
@@ -63,12 +71,15 @@ export default function CarServiceView({
   otherServices,
   phone,
   siteName,
+  customContent,
 }: CarServiceViewProps) {
   const seed = `car-${car.slug}-${service.slug}`;
 
   const titleList = template?.titleTemplate ? template.titleTemplate.split('---').map((s: string) => s.trim()).filter(Boolean) : [];
   const rawTitle = getStableItem(titleList, `title-${seed}`);
-  const pageTitle = rawTitle
+  const pageTitle = customContent?.customTitle
+    ? parseCarTemplate(customContent.customTitle, car.name, service.name, phone, siteName)
+    : rawTitle
     ? parseCarTemplate(rawTitle, car.name, service.name, phone, siteName)
     : `أفضل خدمات ${service.name} لسيارات ${car.name}`;
 
@@ -76,7 +87,9 @@ export default function CarServiceView({
   const rawImage = getStableItem(imageList, `image-${seed}`);
   const selectedImage = rawImage ? parseCarTemplate(rawImage, car.name, service.name, phone, siteName) : '';
 
-  const coreDescription = template?.descTemplate
+  const coreDescription = customContent?.customDescription
+    ? parseCarTemplate(customContent.customDescription, car.name, service.name, phone, siteName)
+    : template?.descTemplate
     ? parseCarTemplate(template.descTemplate, car.name, service.name, phone, siteName)
     : service.description || `نقدم لك خدمات ${service.name} المعتمدة لسيارات ${car.name} بأحدث أجهزة الفحص وقطع الغيار الأصلية.`;
 
@@ -122,12 +135,12 @@ export default function CarServiceView({
 
   const selectedTestimonials = getStableMultiple(allTestimonials, `testimonial-${seed}`, 2);
 
-  const fullHtmlContent = `
+  const fullHtmlContent = sanitizeContentHtml(`
     ${selectedIntro ? `<div class="mb-6 text-lg font-medium">${selectedIntro}</div>` : ''}
     <div>${coreDescription}</div>
     ${selectedNeighborhood ? `<div class="my-6 p-4 bg-gray-50 rounded-lg border text-base text-gray-700">${selectedNeighborhood}</div>` : ''}
     ${selectedOutro ? `<div class="mt-6 text-lg font-medium">${selectedOutro}</div>` : ''}
-  `;
+  `);
 
   const breadcrumbItems = [
     { name: 'الرئيسية', url: '/' },
@@ -156,31 +169,18 @@ export default function CarServiceView({
       "name": siteName || "أوتو كراج",
       ...(phone ? { "telephone": phone } : {}),
     },
-    ...(selectedTestimonials.length > 0 ? {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "reviewCount": selectedTestimonials.length.toString(),
-      },
-      "review": selectedTestimonials.map((t) => ({
-        "@type": "Review",
-        "author": { "@type": "Person", "name": t.name },
-        "reviewRating": { "@type": "Rating", "ratingValue": "5" },
-        "reviewBody": t.comment,
-      })),
-    } : {}),
   };
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       {faqSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
       )}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceSchema) }} />
 
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
         {selectedImage && (

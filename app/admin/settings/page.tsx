@@ -1,8 +1,16 @@
 import { db } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
+import { requireAdminAction } from '@/lib/auth/authorization';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import SettingsForm from './SettingsForm';
+import { verifyAdminPassword } from '@/lib/auth/password';
+import { sanitizeContentHtml, sanitizeCustomHeadCode } from '@/lib/security/content';
+import { getErrorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
+
+function invalidateSettingsCache() {
+  revalidateTag('site-settings', 'max');
+}
 
 export default async function AdminSettingsPage() {
   const settings = await db.setting.findMany();
@@ -14,6 +22,8 @@ export default async function AdminSettingsPage() {
   // 1. حفظ الهوية وبيانات الاتصال
   async function saveIdentityAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const siteName = (formData.get('siteName') as string)?.trim();
       const phoneNumber = (formData.get('phoneNumber') as string)?.trim();
@@ -42,15 +52,18 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
   // 2. حفظ واجهة الهيرو (Hero Section)
   async function saveHeroAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const heroTitle = (formData.get('heroTitle') as string)?.trim();
       if (!heroTitle) return { success: false, error: 'العنوان الرئيسي مطلوب' };
@@ -74,17 +87,20 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ إعدادات الهيرو' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ إعدادات الهيرو') };
     }
   }
 
   // 3. حفظ محتوى الصفحة الرئيسية المخصص
   async function saveHomeContentAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
-      const homeCustomContent = (formData.get('homeCustomContent') as string) || '';
+      const homeCustomContent = sanitizeContentHtml(formData.get('homeCustomContent'));
 
       await db.setting.upsert({
         where: { key: 'home_custom_content' },
@@ -94,15 +110,18 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ محتوى الصفحة الرئيسية' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ محتوى الصفحة الرئيسية') };
     }
   }
 
   // 4. حفظ حسابات التواصل الاجتماعي
   async function saveSocialAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const updates = [
         { key: 'facebook_url', value: (formData.get('facebookUrl') as string)?.trim() || '' },
@@ -121,15 +140,18 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ روابط التواصل' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ روابط التواصل') };
     }
   }
 
   // 5. حفظ إعدادات SEO الصفحة الرئيسية
   async function saveHomeSeoAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const updates = [
         { key: 'home_meta_title', value: (formData.get('homeMetaTitle') as string)?.trim() || '' },
@@ -149,15 +171,18 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ إعدادات الـ SEO' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ إعدادات الـ SEO') };
     }
   }
 
   // 6. حفظ نصوص الفوتر
   async function saveFooterAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const updates = [
         { key: 'footer_description', value: (formData.get('footerDescription') as string)?.trim() || '' },
@@ -176,17 +201,24 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
   // 7. حفظ أكواد الـ Head
   async function saveHeadCodeAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
-      const headCode = (formData.get('headCode') as string) || '';
+      if (!verifyAdminPassword(formData.get('adminPassword'), process.env.ADMIN_PASSWORD)) {
+        return { success: false, error: 'كلمة مرور المدير غير صحيحة' };
+      }
+
+      const headCode = sanitizeCustomHeadCode(formData.get('headCode'));
 
       await db.setting.upsert({
         where: { key: 'custom_head_code' },
@@ -196,15 +228,18 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
   // 8. حفظ ملف Robots.txt
   async function saveRobotsTxtAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     try {
       const robotsTxt = (formData.get('robotsTxt') as string) || '';
 
@@ -216,9 +251,10 @@ export default async function AdminSettingsPage() {
 
       revalidatePath('/robots.txt');
       revalidatePath('/admin/settings');
+      invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 

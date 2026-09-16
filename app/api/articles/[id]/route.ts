@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '../../../../lib/db';
+import {
+  authorizeAdminApiRequest,
+  isAdminAuthenticated,
+} from '@/lib/auth/authorization';
+import { assertTopLevelSlugAvailable, publicError, validateArticleInput } from '@/lib/content-input';
 
 export async function GET(
   _request: NextRequest,
@@ -9,13 +14,17 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const article = await db.article.findUnique({
-      where: { id },
+    const isAdmin = await isAdminAuthenticated();
+    const article = await db.article.findFirst({
+      where: {
+        id,
+        ...(isAdmin ? {} : { isPublished: true }),
+      },
       include: { category: true },
     });
     if (!article) return NextResponse.json({ message: 'المقال غير موجود' }, { status: 404 });
     return NextResponse.json(article);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'خطأ في جلب المقال' }, { status: 500 });
   }
 }
@@ -24,9 +33,12 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await authorizeAdminApiRequest(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await params;
-    const body = await request.json();
+    const body = validateArticleInput(await request.json());
     const {
       title,
       slug,
@@ -54,9 +66,11 @@ export async function PUT(
       where: { id },
     });
 
-    const updated = await db.article.update({
-      where: { id },
-      data: {
+    const updated = await db.$transaction(async (tx) => {
+      await assertTopLevelSlugAvailable(tx, slug, { owner: 'article', id });
+      return tx.article.update({
+        where: { id },
+        data: {
         title,
         slug,
         content,
@@ -68,7 +82,8 @@ export async function PUT(
         faqs,
         isPublished,
         categoryId: category.id,
-      },
+        },
+      });
     });
 
     // تفريغ وتحديث كاش المسارات المتأثرة
@@ -83,14 +98,18 @@ export async function PUT(
 
     return NextResponse.json(updated);
   } catch (error) {
-    return NextResponse.json({ message: 'تعذر تحديث المقال', error: String(error) }, { status: 500 });
+    const result = publicError(error);
+    return NextResponse.json({ message: result.message, field: result.field, code: result.code }, { status: result.status });
   }
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await authorizeAdminApiRequest(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await params;
 
@@ -113,7 +132,7 @@ export async function DELETE(
     revalidatePath('/sitemap.xml');
 
     return NextResponse.json({ message: 'تم الحذف بنجاح' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'تعذر حذف المقال' }, { status: 500 });
   }
 }

@@ -1,0 +1,60 @@
+name: Quality and production build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/signed-admin-session]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: blog_engine_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: mysql://root@127.0.0.1:3306/blog_engine_test
+      ADMIN_PASSWORD: ci-admin-password-not-for-production
+      SESSION_SECRET: ci-session-secret-with-more-than-thirty-two-characters
+      NEXT_PUBLIC_SITE_URL: https://example.com
+      UPLOAD_STORAGE_DIR: ${{ runner.temp }}/blog-engine-uploads
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate:deploy
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run test:functions
+      - run: npm run build -- --webpack
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high

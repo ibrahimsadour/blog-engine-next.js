@@ -1,5 +1,11 @@
 import { db } from '@/lib/db';
+import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
+import {
+  getSafeRedirectTarget,
+  normalizeInternalRedirectPath,
+} from '@/lib/security/redirect';
+import { invalidateRedirectRulesCache } from '@/lib/redirect-rules';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,14 +16,20 @@ export default async function RedirectsAdminPage() {
 
   async function addRedirectAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
 
-    let sourcePath = (formData.get('sourcePath') as string).trim();
-    let targetPath = (formData.get('targetPath') as string).trim();
-    const statusCode = parseInt(formData.get('statusCode') as string, 10) || 301;
+    const rawSourcePath = (formData.get('sourcePath') as string).trim();
+    const sourcePath = normalizeInternalRedirectPath(
+      rawSourcePath.startsWith('/') ? rawSourcePath : `/${rawSourcePath}`
+    );
+    const targetPath = getSafeRedirectTarget(
+      (formData.get('targetPath') as string).trim()
+    );
+    const requestedStatusCode = parseInt(formData.get('statusCode') as string, 10);
+    const statusCode = requestedStatusCode === 302 ? 302 : 301;
 
-    if (!sourcePath.startsWith('/')) sourcePath = `/${sourcePath}`;
-    if (!targetPath.startsWith('/') && !targetPath.startsWith('http')) {
-      targetPath = `/${targetPath}`;
+    if (!sourcePath || !targetPath || sourcePath === targetPath) {
+      throw new Error('مسار التحويل غير صالح أو النطاق الخارجي غير مسموح');
     }
 
     await db.redirect.upsert({
@@ -25,14 +37,18 @@ export default async function RedirectsAdminPage() {
       update: { targetPath, statusCode },
       create: { sourcePath, targetPath, statusCode },
     });
+    invalidateRedirectRulesCache();
 
     revalidatePath('/admin/redirects');
   }
 
   async function deleteRedirectAction(formData: FormData) {
     'use server';
+    await requireAdminAction();
+
     const id = formData.get('id') as string;
     await db.redirect.delete({ where: { id } });
+    invalidateRedirectRulesCache();
     revalidatePath('/admin/redirects');
   }
 
@@ -67,7 +83,7 @@ export default async function RedirectsAdminPage() {
               type="text"
               name="targetPath"
               required
-              placeholder="/blog/new-article أو رابط خارجي"
+              placeholder="/blog/new-article أو رابط خارجي موثوق"
               className="w-full rounded-xl border border-gray-300 p-2.5 text-xs text-left font-mono focus:border-blue-500 focus:outline-hidden"
               dir="ltr"
             />

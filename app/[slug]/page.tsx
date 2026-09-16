@@ -7,7 +7,6 @@ import {
   generateArticleSchema,
   generateFaqSchema,
   generateBreadcrumbSchema,
-  generateLocalBusinessSchema,
 } from '@/lib/schema';
 import { injectInternalLinks, InternalLinkRule } from '@/lib/internal-links';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -16,7 +15,10 @@ import FaqSection from '@/components/FaqSection';
 import CallToAction from '@/components/CallToAction';
 import RelatedArticles from '@/components/RelatedArticles';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
-import { cookies } from 'next/headers';
+import { isAdminAuthenticated } from '@/lib/auth/authorization';
+import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
+import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
+import { getSiteSettings } from '@/lib/settings';
 
 export const revalidate = 3600;
 
@@ -82,39 +84,15 @@ function injectHeadingIds(html: string): {
 }
 
 async function getSiteConfig() {
-  try {
-    const settings = await db.setting.findMany();
-    const settingsMap = Object.fromEntries(
-      settings.map((s) => [s.key.trim().toLowerCase(), s.value?.trim() || ''])
-    );
-
-    const phone =
-      settingsMap['phone_number'] ||
-      settingsMap['phone'] ||
-      settingsMap['site_phone'] ||
-      settingsMap['contact_phone'] ||
-      settingsMap['cta_phone'] ||
-      settingsMap['mobile'] ||
-      '';
-
-    const siteName =
-      settingsMap['site_name'] ||
-      settingsMap['sitename'] ||
-      settingsMap['title'] ||
-      'أوتو كراج';
-
-    return { phone, siteName };
-  } catch {
-    return { phone: '', siteName: 'أوتو كراج' };
-  }
+  const settings = await getSiteSettings();
+  return { phone: settings.phoneNumber, siteName: settings.siteName };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
-
+  const siteUrl = getSiteUrl();
   const { phone, siteName } = await getSiteConfig();
 
   // 1. التحقق من المدن
@@ -134,7 +112,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: city.keywords || undefined,
       alternates: {
-        canonical: `${siteUrl}/${city.slug}`,
+        canonical: buildSiteUrl(city.slug),
       },
     };
   }
@@ -156,7 +134,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: car.keywords || undefined,
       alternates: {
-        canonical: `${siteUrl}/${car.slug}`,
+        canonical: buildSiteUrl(car.slug),
       },
       openGraph: {
         title,
@@ -172,17 +150,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const article = await db.article.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
+      isPublished: true,
     },
     include: { category: true },
   });
 
   if (article) {
-    const url = `${siteUrl}/${article.slug}`;
+    const url = buildSiteUrl(article.slug);
     const ogImageUrl = article.featuredImage
       ? article.featuredImage.startsWith('http')
         ? article.featuredImage
         : `${siteUrl}${article.featuredImage}`
-      : undefined;
+      : `${siteUrl}/images/og-default.jpg`;
 
     const rawTitle = article.metaTitle || article.title;
     const rawDesc = article.metaDesc || article.excerpt || undefined;
@@ -198,7 +177,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       keywords: keywordsValue,
       alternates: {
-        canonical: article.canonicalUrl || url,
+        canonical: trustedCanonicalUrl(article.canonicalUrl, `/${article.slug}`),
       },
       robots: {
         index: !article.noIndex,
@@ -217,16 +196,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url,
         type: 'article',
         locale: 'ar_KW',
-        publishedTime: article.createdAt.toISOString(),
+        publishedTime: (article.publishedAt || article.createdAt).toISOString(),
         modifiedTime: article.updatedAt.toISOString(),
         section: article.category?.name || 'خدمات',
-        images: ogImageUrl ? [{ url: ogImageUrl }] : [],
+        images: [{ url: ogImageUrl }],
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description,
-        images: ogImageUrl ? [ogImageUrl] : [],
+        images: [ogImageUrl],
       },
     };
   }
@@ -246,7 +225,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       alternates: {
-        canonical: `${siteUrl}/${page.slug}`,
+        canonical: buildSiteUrl(page.slug),
       },
       robots: {
         index: !page.noIndex,
@@ -265,9 +244,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
 
-  const cookieStore = await cookies();
-  const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated_admin';
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
+  const isAdmin = await isAdminAuthenticated();
 
   const { phone, siteName } = await getSiteConfig();
 
@@ -296,7 +273,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
         <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
           <div className="mx-auto max-w-4xl space-y-8">
@@ -366,7 +343,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
         <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12" dir="rtl">
           <div className="mx-auto max-w-4xl space-y-8">
@@ -467,12 +444,12 @@ export default async function DynamicSlugPage({ params }: PageProps) {
       take: 3,
     });
 
-    const pageUrl = `${siteUrl}/${article.slug}`;
+    const pageUrl = buildSiteUrl(article.slug);
 
     const parsedTitle = parseContentVariables(article.title, phone, siteName);
     const parsedExcerpt = article.excerpt ? parseContentVariables(article.excerpt, phone, siteName) : '';
     const parsedMetaDesc = article.metaDesc ? parseContentVariables(article.metaDesc, phone, siteName) : undefined;
-    const parsedContent = parseContentVariables(article.content, phone, siteName);
+    const parsedContent = sanitizeContentHtml(parseContentVariables(article.content, phone, siteName));
 
     const articleSchema = generateArticleSchema(
       {
@@ -481,18 +458,12 @@ export default async function DynamicSlugPage({ params }: PageProps) {
         metaDescription: parsedMetaDesc,
         featuredImage: article.featuredImage,
         createdAt: article.createdAt,
+        publishedAt: article.publishedAt,
         updatedAt: article.updatedAt,
         author: article.author ? { name: article.author.name } : null,
       },
       pageUrl
     );
-
-    const localBusinessSchema = generateLocalBusinessSchema({
-      name: parsedTitle,
-      description: parsedMetaDesc || parsedExcerpt || undefined,
-      areaServed: article.targetArea || 'الكويت',
-      url: pageUrl,
-    });
 
     const breadcrumbItems = [
       ...(article.category ? [{ name: article.category.name, url: `/category/${article.category.slug}` }] : []),
@@ -508,28 +479,24 @@ export default async function DynamicSlugPage({ params }: PageProps) {
     const faqSchema = faqs.length > 0 ? generateFaqSchema(faqs) : null;
 
     const { htmlWithIds, headings } = injectHeadingIds(parsedContent);
-    const processedContent = injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`);
+    const processedContent = sanitizeContentHtml(injectInternalLinks(htmlWithIds, internalLinkRules, `/${article.slug}`));
 
     return (
       <>
-        {!article.noIndex && (
+        {article.isPublished && !article.noIndex && (
           <>
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
             />
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-            />
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
             {faqSchema && (
               <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
               />
             )}
           </>
@@ -571,8 +538,8 @@ export default async function DynamicSlugPage({ params }: PageProps) {
                     {article.category.name}
                   </span>
                 )}
-                <time dateTime={article.createdAt.toISOString()}>
-                  {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                <time dateTime={(article.publishedAt || article.createdAt).toISOString()}>
+                  {new Date(article.publishedAt || article.createdAt).toLocaleDateString('ar-EG', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -625,7 +592,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
   if (page) {
     const parsedPageTitle = parseContentVariables(page.title, phone, siteName);
-    const parsedPageContent = parseContentVariables(page.content, phone, siteName);
+    const parsedPageContent = sanitizeContentHtml(parseContentVariables(page.content, phone, siteName));
 
     const breadcrumbs = [
       { name: 'الرئيسية', url: '/' },

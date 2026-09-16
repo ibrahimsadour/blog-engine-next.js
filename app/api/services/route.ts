@@ -1,82 +1,35 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import * as XLSX from 'xlsx';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import { publicError, validateDirectoryInput } from '@/lib/content-input';
+import { validateDirectoryRows } from '@/lib/directory-import';
+import { readXlsxRows } from '@/lib/import-spreadsheet';
+import { revalidateDirectory } from '@/lib/revalidate-directory';
 
 export async function GET() {
-  try {
-    const services = await db.service.findMany({ orderBy: { sortOrder: 'asc' } });
-    return NextResponse.json(services);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch services' }, { status: 500 });
-  }
+  try { return NextResponse.json(await db.service.findMany({ orderBy: { sortOrder: 'asc' } })); }
+  catch { return NextResponse.json({ error: 'تعذر جلب الخدمات', code: 'DATABASE_ERROR' }, { status: 500 }); }
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await authorizeAdminApiRequest(request); if (unauthorized) return unauthorized;
   try {
-    const contentType = request.headers.get('content-type') || '';
-    
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      const file = formData.get('file') as File;
-      if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const rows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-      let importedCount = 0;
-      for (const row of rows) {
-        const name = row.name || row.Name || row.الخدمة;
-        const slug = row.slug || row.Slug || row.الرابط;
-        if (!name || !slug) continue;
-
-        await db.service.upsert({
-          where: { slug: String(slug) },
-          update: {
-            name: String(name),
-            description: row.description || row.Description || row.الوصف || '',
-            metaTitle: row.metaTitle || row.MetaTitle || row.عنوان_السييو || '',
-            metaDesc: row.metaDesc || row.MetaDesc || row.وصف_السييو || '',
-            keywords: row.keywords || row.Keywords || row.الكلمات_المفتاحية || '',
-          },
-          create: {
-            name: String(name),
-            slug: String(slug),
-            description: row.description || row.Description || row.الوصف || '',
-            metaTitle: row.metaTitle || row.MetaTitle || row.عنوان_السييو || '',
-            metaDesc: row.metaDesc || row.MetaDesc || row.وصف_السييو || '',
-            keywords: row.keywords || row.Keywords || row.الكلمات_المفتاحية || '',
-          },
-        });
-        importedCount++;
-      }
-
-      return NextResponse.json({ success: true, count: importedCount });
+    if ((request.headers.get('content-type') || '').includes('multipart/form-data')) {
+      const file = (await request.formData()).get('file');
+      if (!(file instanceof File)) return NextResponse.json({ error: 'ملف Excel مطلوب', code: 'FILE_REQUIRED' }, { status: 400 });
+      const items = validateDirectoryRows(await readXlsxRows(file), 'الخدمة', false);
+      await db.$transaction(async (tx) => {
+        const existing = await tx.service.findMany({ where: { slug: { in: items.map((item) => item.slug) } }, select: { slug: true } });
+        const existingSlugs = new Set(existing.map((item) => item.slug));
+        await tx.service.createMany({ data: items.filter((item) => !existingSlugs.has(item.slug)), skipDuplicates: true });
+        await Promise.all(items.filter((item) => existingSlugs.has(item.slug)).map((item) => tx.service.update({ where: { slug: item.slug }, data: item })));
+      });
+      revalidateDirectory('service');
+      return NextResponse.json({ success: true, count: items.length });
     }
-
-    const body = await request.json();
-    const { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive } = body;
-
-    if (!name || !slug) {
-      return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
-    }
-
-    const service = await db.service.create({
-      data: { name, slug, description, metaTitle, metaDesc, keywords, image, sortOrder, isActive },
-    });
-
-    return NextResponse.json(service);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
-  }
-}
-
-export async function DELETE() {
-  try {
-    const deleted = await db.service.deleteMany({});
-    return NextResponse.json({ success: true, count: deleted.count });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete all services' }, { status: 500 });
-  }
+    const input = validateDirectoryInput(await request.json());
+    const service = await db.service.create({ data: input });
+    revalidateDirectory('service', service.slug);
+    return NextResponse.json(service, { status: 201 });
+  } catch (error) { const result = publicError(error); return NextResponse.json({ error: result.message, field: result.field, code: result.code }, { status: result.status }); }
 }

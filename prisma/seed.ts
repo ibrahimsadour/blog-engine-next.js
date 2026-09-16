@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import { requireDatabaseUrl } from '../lib/database-url';
 
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
+const adapter = new PrismaMariaDb(requireDatabaseUrl());
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

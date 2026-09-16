@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '../../../lib/db';
+import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
+import { assertTopLevelSlugAvailable, publicError, validateArticleInput } from '@/lib/content-input';
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+  const unauthorized = await authorizeAdminApiRequest(request);
+  if (unauthorized) return unauthorized;
 
+  try {
+    const body = validateArticleInput(await request.json());
     const {
       title,
       slug,
@@ -24,14 +28,6 @@ export async function POST(request: NextRequest) {
       authorSlug,
       isPublished = true,
     } = body;
-
-    // التحقق من الحقول الأساسية
-    if (!title || !slug || !content || !categorySlug) {
-      return NextResponse.json(
-        { message: 'الحقول المطلوبة: title, slug, content, categorySlug' },
-        { status: 400 }
-      );
-    }
 
     // جلب أو التحقق من وجود التصنيف
     const category = await db.category.findUnique({
@@ -55,9 +51,12 @@ export async function POST(request: NextRequest) {
     }
 
     // حفظ المقال أو تحديثه إذا كان موجوداً مسبقاً
-    const article = await db.article.upsert({
-      where: { slug },
-      update: {
+    const article = await db.$transaction(async (tx) => {
+      const existing = await tx.article.findUnique({ where: { slug }, select: { id: true } });
+      await assertTopLevelSlugAvailable(tx, slug, existing ? { owner: 'article', id: existing.id } : undefined);
+      return tx.article.upsert({
+        where: { slug },
+        update: {
         title,
         content,
         excerpt,
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
         categoryId: category.id,
         authorId,
       },
-      create: {
+        create: {
         title,
         slug,
         content,
@@ -91,7 +90,8 @@ export async function POST(request: NextRequest) {
         publishedAt: isPublished ? new Date() : null,
         categoryId: category.id,
         authorId,
-      },
+        },
+      });
     });
 
     // تفريغ وتحديث الكاش فورياً للمقال والقسم والصفحة الرئيسية والخرائط
@@ -113,10 +113,10 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Article API Error:', error);
+    const result = publicError(error);
     return NextResponse.json(
-      { message: 'حدث خطأ أثناء معالجة الطلب', error: String(error) },
-      { status: 500 }
+      { message: result.message, field: result.field, code: result.code },
+      { status: result.status }
     );
   }
 }
@@ -138,7 +138,7 @@ export async function GET() {
     });
 
     return NextResponse.json(articles);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'Database error' }, { status: 500 });
   }
 }

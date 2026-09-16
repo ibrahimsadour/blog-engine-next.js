@@ -3,10 +3,32 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import CityServiceView from '@/components/CityServiceView';
 import CarServiceView from '@/components/CarServiceView';
+import { buildSiteUrl } from '@/lib/site-url';
+import { cache } from 'react';
+import { getSiteSettings } from '@/lib/settings';
 
 type Props = {
   params: Promise<{ slug: string; service: string }>;
 };
+
+const getServiceRouteData = cache(async (slug: string, serviceSlug: string) => {
+  const [city, car, service] = await Promise.all([
+    db.city.findUnique({ where: { slug, isActive: true } }),
+    db.car.findUnique({ where: { slug, isActive: true } }),
+    db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
+  ]);
+  if ((!city && !car) || !service) return { city, car, service, customContent: null, template: null };
+  const [customContent, template] = car
+    ? await Promise.all([
+        db.carServiceContent.findUnique({ where: { carId_serviceId: { carId: car.id, serviceId: service.id } } }),
+        db.globalCarServiceTemplate.findFirst(),
+      ])
+    : await Promise.all([
+        db.cityServiceContent.findUnique({ where: { cityId_serviceId: { cityId: city!.id, serviceId: service.id } } }),
+        db.globalServiceTemplate.findFirst(),
+      ]);
+  return { city, car, service, customContent, template };
+});
 
 function parseTemplate(
   template: string,
@@ -69,68 +91,25 @@ function generateLocalizedKeywords(
 }
 
 async function getSiteConfig() {
-  try {
-    const settings = await db.setting.findMany();
-    const settingsMap = Object.fromEntries(
-      settings.map((s) => [s.key.trim().toLowerCase(), s.value?.trim() || ''])
-    );
-
-    const rawPhone =
-      settingsMap['phone_number'] ||
-      settingsMap['phone'] ||
-      settingsMap['site_phone'] ||
-      settingsMap['contact_phone'] ||
-      settingsMap['cta_phone'] ||
-      settingsMap['mobile'] ||
-      '';
-
-    let phone = rawPhone.trim();
-    if (phone && !phone.startsWith('+')) {
-      phone = phone.startsWith('965') ? `+${phone}` : `+965${phone}`;
-    }
-
-    const siteName =
-      settingsMap['site_name'] ||
-      settingsMap['sitename'] ||
-      settingsMap['title'] ||
-      'أوتو كراج';
-
-    return { phone, siteName };
-  } catch {
-    return { phone: '', siteName: 'أوتو كراج' };
-  }
+  const settings = await getSiteSettings();
+  let phone = settings.phoneNumber.trim();
+  if (phone && !phone.startsWith('+')) phone = phone.startsWith('965') ? `+${phone}` : `+965${phone}`;
+  return { phone, siteName: settings.siteName };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, service: serviceSlug } = await params;
 
-  const [city, car, service] = await Promise.all([
-    db.city.findUnique({ where: { slug, isActive: true } }),
-    db.car.findUnique({ where: { slug, isActive: true } }),
-    db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
-  ]);
+  const { city, car, service, customContent, template } = await getServiceRouteData(slug, serviceSlug);
 
   if ((!city && !car) || !service) return {};
 
   const isCar = Boolean(car);
   const targetName = isCar ? car!.name : city!.name;
   const { phone, siteName } = await getSiteConfig();
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://autogarag.net').replace(/\/$/, '');
-  const canonicalUrl = `${baseUrl}/${slug}/${serviceSlug}`;
+  const canonicalUrl = buildSiteUrl(slug, serviceSlug);
 
   // فحص المحتوى المخصص المدخل يدوياً أولاً
-  const customContent = isCar
-    ? await db.carServiceContent.findUnique({
-        where: { carId_serviceId: { carId: car!.id, serviceId: service.id } },
-      })
-    : await db.cityServiceContent.findUnique({
-        where: { cityId_serviceId: { cityId: city!.id, serviceId: service.id } },
-      });
-
-  const template = isCar
-    ? await db.globalCarServiceTemplate.findFirst()
-    : await db.globalServiceTemplate.findFirst();
-
   const seed = `${isCar ? 'car' : 'city'}-${slug}-${serviceSlug}`;
 
   // Meta Title
@@ -192,11 +171,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DynamicServiceCityOrCarPage({ params }: Props) {
   const { slug, service: serviceSlug } = await params;
 
-  const [city, car, service] = await Promise.all([
-    db.city.findUnique({ where: { slug, isActive: true } }),
-    db.car.findUnique({ where: { slug, isActive: true } }),
-    db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
-  ]);
+  const { city, car, service, customContent, template } = await getServiceRouteData(slug, serviceSlug);
 
   if ((!city && !car) || !service) {
     notFound();
@@ -206,8 +181,7 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
 
   // معالجة صفحات المدن مع الخدمة
   if (city) {
-    const [template, otherCities, otherServices] = await Promise.all([
-      db.globalServiceTemplate.findFirst(),
+    const [otherCities, otherServices] = await Promise.all([
       db.city.findMany({
         where: { slug: { not: city.slug }, isActive: true },
         take: 8,
@@ -229,13 +203,13 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
         otherServices={otherServices}
         phone={phone}
         siteName={siteName}
+        customContent={customContent}
       />
     );
   }
 
   // معالجة صفحات السيارات مع الخدمة
-  const [template, otherCars, otherServices] = await Promise.all([
-    db.globalCarServiceTemplate.findFirst(),
+  const [otherCars, otherServices] = await Promise.all([
     db.car.findMany({
       where: { slug: { not: car!.slug }, isActive: true },
       take: 8,
@@ -257,6 +231,7 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
       otherServices={otherServices}
       phone={phone}
       siteName={siteName}
+      customContent={customContent}
     />
   );
 }

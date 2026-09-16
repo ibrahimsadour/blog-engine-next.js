@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import RichTextEditor from '@/components/RichTextEditor';
+import type { ContentTemplateData } from '@/types/admin';
 
 export default function CarServiceTemplateForm({ 
   template, 
   action 
 }: { 
-  template: any; 
+  template: ContentTemplateData | null;
   action: (formData: FormData) => Promise<void> | void; 
 }) {
   const [desc, setDesc] = useState(template?.descTemplate || '');

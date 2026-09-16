@@ -4,6 +4,13 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function isManagedImageUrl(url: string): boolean {
+  return url.startsWith('/api/media/') || url.startsWith('/uploads/');
+}
+
 interface ImageUploaderProps {
   initialImage?: string;
   name?: string;
@@ -29,8 +36,15 @@ export default function ImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      toast.error('يُسمح فقط بصور JPG وPNG وWebP');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
       toast.error('حجم الصورة كبير جداً (الحد الأقصى 5 ميغابايت)');
+      e.target.value = '';
       return;
     }
 
@@ -50,8 +64,9 @@ export default function ImageUploader({
 
       updateImageUrl(data.url);
       toast.success('تم رفع الصورة بنجاح!', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ أثناء الرفع', { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء الرفع';
+      toast.error(message, { id: toastId });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -59,7 +74,7 @@ export default function ImageUploader({
   }
 
   async function handleRemoveImage() {
-    if (imageUrl.startsWith('/uploads/')) {
+    if (isManagedImageUrl(imageUrl)) {
       try {
         await fetch('/api/upload', {
           method: 'DELETE',
@@ -119,6 +134,8 @@ export default function ImageUploader({
           <input
             type="url"
             placeholder="https://example.com/banner.webp"
+            pattern="https://.*"
+            title="يجب أن يبدأ رابط الصورة الخارجية بـ https://"
             value={imageUrl}
             onChange={(e) => updateImageUrl(e.target.value)}
             className="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-mono focus:border-blue-500 focus:outline-hidden"
@@ -132,7 +149,7 @@ export default function ImageUploader({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
             onChange={handleFileUpload}
             className="hidden"
           />

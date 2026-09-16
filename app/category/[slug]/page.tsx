@@ -5,12 +5,18 @@ import Image from 'next/image';
 import { db } from '@/lib/db';
 import { generateBreadcrumbSchema } from '@/lib/schema';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { serializeJsonLd } from '@/lib/security/content';
+import { buildSiteUrl } from '@/lib/site-url';
+import Pagination from '@/components/Pagination';
 
 export const revalidate = 3600;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ page?: string }>;
 }
+
+const PAGE_SIZE = 12;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -28,8 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const url = `${siteUrl}/category/${category.slug}`;
+  const url = buildSiteUrl('category', category.slug);
   const title = category.metaTitle || `${category.name} | دليل الخدمات`;
   const description =
     category.metaDesc ||
@@ -69,8 +74,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function CategoryPage({ params }: PageProps) {
+export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const requestedPage = Number((await searchParams)?.page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const decodedSlug = decodeURIComponent(slug).trim().toLowerCase();
 
   const category = await db.category.findFirst({
@@ -80,8 +87,11 @@ export default async function CategoryPage({ params }: PageProps) {
     include: {
       articles: {
         where: { isPublished: true, noIndex: false },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { publishedAt: 'desc' },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
       },
+      _count: { select: { articles: { where: { isPublished: true, noIndex: false } } } },
     },
   });
 
@@ -89,8 +99,7 @@ export default async function CategoryPage({ params }: PageProps) {
     notFound();
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const pageUrl = `${siteUrl}/category/${category.slug}`;
+  const pageUrl = buildSiteUrl('category', category.slug);
 
   const breadcrumbItems = [{ name: category.name, url: `/category/${category.slug}` }];
   const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
@@ -107,8 +116,8 @@ export default async function CategoryPage({ params }: PageProps) {
       '@type': 'ItemList',
       itemListElement: category.articles.map((article, idx) => ({
         '@type': 'ListItem',
-        position: idx + 1,
-        url: `${siteUrl}/${article.slug}`,
+        position: (page - 1) * PAGE_SIZE + idx + 1,
+        url: buildSiteUrl(article.slug),
         name: article.title,
       })),
     },
@@ -118,11 +127,11 @@ export default async function CategoryPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50 px-4 py-10 md:px-8">
@@ -184,8 +193,8 @@ export default async function CategoryPage({ params }: PageProps) {
                       )}
 
                       <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] text-gray-400">
-                        <time dateTime={article.createdAt.toISOString()}>
-                          {new Date(article.createdAt).toLocaleDateString('ar-EG', {
+                        <time dateTime={(article.publishedAt || article.createdAt).toISOString()}>
+                          {new Date(article.publishedAt || article.createdAt).toLocaleDateString('ar-EG', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
@@ -204,6 +213,7 @@ export default async function CategoryPage({ params }: PageProps) {
               </div>
             )}
           </section>
+          <Pagination page={page} totalPages={Math.ceil(category._count.articles / PAGE_SIZE)} basePath={`/category/${category.slug}`} />
         </div>
       </main>
     </>

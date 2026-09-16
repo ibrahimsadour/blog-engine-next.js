@@ -38,22 +38,22 @@ export default async function AdminCityServicesPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">العنوان المخصص (H1)</label>
-            <input type="text" name="customTitle" placeholder="مثال: تصليح هيدروليك حولي الاحترافي" className="w-full border rounded-lg p-2.5" />
+            <input type="text" name="customTitle" maxLength={160} placeholder="مثال: تصليح هيدروليك حولي الاحترافي" className="w-full border rounded-lg p-2.5" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">الوصف المخصص</label>
-            <textarea name="customDescription" rows={3} placeholder="تفاصيل وصف الخدمة في هذه المدينة..." className="w-full border rounded-lg p-2.5" />
+            <textarea name="customDescription" rows={3} maxLength={10000} placeholder="تفاصيل وصف الخدمة في هذه المدينة..." className="w-full border rounded-lg p-2.5" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">عنوان الميتا (Meta Title)</label>
-              <input type="text" name="metaTitle" className="w-full border rounded-lg p-2.5" />
+              <input type="text" name="metaTitle" maxLength={300} className="w-full border rounded-lg p-2.5" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">وصف الميتا (Meta Description)</label>
-              <input type="text" name="metaDesc" className="w-full border rounded-lg p-2.5" />
+              <input type="text" name="metaDesc" maxLength={500} className="w-full border rounded-lg p-2.5" />
             </div>
           </div>
 

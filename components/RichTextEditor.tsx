@@ -26,7 +26,6 @@ import {
   AlignJustify,
   Link as LinkIcon,
   Unlink,
-  Image as ImageIcon,
   Undo,
   Redo,
   Upload,
@@ -41,14 +40,21 @@ import {
   FileCode,
   Replace,
   X,
-  Check,
   Edit3,
 } from "lucide-react";
+import LinkSettingsModal from "@/components/editor/LinkSettingsModal";
 
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
+}
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function isManagedImageUrl(url: string): boolean {
+  return url.startsWith("/api/media/") || url.startsWith("/uploads/");
 }
 
 export default function RichTextEditor({
@@ -125,6 +131,7 @@ export default function RichTextEditor({
         class:
           "prose prose-lg max-w-none min-h-[400px] p-4 focus:outline-none text-slate-800 dir-rtl",
         dir: "rtl",
+        "aria-label": placeholder,
       },
     },
     onUpdate: ({ editor }) => {
@@ -137,7 +144,6 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editor && content !== editor.getHTML() && !isSourceMode) {
       editor.commands.setContent(content || "");
-      setSourceCode(content || "");
     }
   }, [content, editor, isSourceMode]);
 
@@ -207,6 +213,18 @@ export default function RichTextEditor({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      alert("يُسمح فقط بصور JPG وPNG وWebP.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert("حجم الصورة يتجاوز الحد الأقصى المسموح وهو 5 ميغابايت.");
+      e.target.value = "";
+      return;
+    }
+
     const altText = window.prompt(
       "أدخل النص البديل للصورة (Alt Text للسيو):",
       file.name.replace(/\.[^/.]+$/, "")
@@ -264,7 +282,7 @@ export default function RichTextEditor({
     if (!confirmDelete) return;
 
     try {
-      if (imageSrc.startsWith("/uploads/")) {
+      if (isManagedImageUrl(imageSrc)) {
         await fetch(`/api/upload?src=${encodeURIComponent(imageSrc)}`, {
           method: "DELETE",
         });
@@ -591,7 +609,7 @@ export default function RichTextEditor({
               type="file"
               ref={fileInputRef}
               onChange={handleFileUpload}
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               className="hidden"
             />
             <button
@@ -707,93 +725,7 @@ export default function RichTextEditor({
       )}
 
       {/* نافذة الرابط المتقدمة */}
-      {isLinkModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-5 dir-rtl">
-            <h3 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
-              <LinkIcon size={18} className="text-blue-600" />
-              <span>إعدادات الرابط للسيو</span>
-            </h3>
-
-            <div className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  رابط الـ URL (داخلي أو خارجي):
-                </label>
-                <input
-                  type="text"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://example.com أو /category/services"
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-left dir-ltr focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  نوع الرابط لمحركات البحث (SEO):
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLinkRel("dofollow")}
-                    className={`py-2 px-3 rounded-lg border text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      linkRel === "dofollow"
-                        ? "bg-blue-50 border-blue-500 text-blue-700"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {linkRel === "dofollow" && <Check size={14} />}
-                    <span>Dofollow (ممرر للسلطة)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLinkRel("nofollow")}
-                    className={`py-2 px-3 rounded-lg border text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      linkRel === "nofollow"
-                        ? "bg-amber-50 border-amber-500 text-amber-800"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {linkRel === "nofollow" && <Check size={14} />}
-                    <span>Nofollow (غير ممرر)</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="linkTargetCheckbox"
-                  checked={linkTarget}
-                  onChange={(e) => setLinkTarget(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                />
-                <label htmlFor="linkTargetCheckbox" className="text-xs text-slate-700 font-medium cursor-pointer">
-                  فتح الرابط في تبويب جديد (<code>target="_blank"</code>)
-                </label>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setIsLinkModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleApplyLink}
-                className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-              >
-                حفظ الرابط
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {isLinkModalOpen && <LinkSettingsModal url={linkUrl} rel={linkRel} openInNewTab={linkTarget} onUrlChange={setLinkUrl} onRelChange={setLinkRel} onTargetChange={setLinkTarget} onCancel={() => setIsLinkModalOpen(false)} onSave={handleApplyLink} />}
     </div>
   );
 }

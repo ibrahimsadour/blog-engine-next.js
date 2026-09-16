@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { buildSiteUrl } from '@/lib/site-url';
+import { connection } from 'next/server';
 
 export const revalidate = 3600;
 
@@ -8,10 +10,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'دليل ماركات وأنواع السيارات',
     description: 'تصفح قائمة ماركات السيارات المدعومة واستكشف جميع خدمات الصيانة والإصلاح المتاحة لكل ماركة.',
+    alternates: { canonical: buildSiteUrl('cars') },
   };
 }
 
 export default async function CarsPage() {
+  await connection();
   const cars = await db.car.findMany({
     where: { isActive: true },
     orderBy: { sortOrder: 'asc' },

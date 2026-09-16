@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { siteConfig } from './site-config';
+import { trustedCanonicalUrl } from './site-url';
 
 interface SeoProps {
   title?: string;
@@ -23,7 +24,7 @@ export function constructMetadata({
   noIndex = false,
 }: SeoProps = {}): Metadata {
   const pageTitle = title ? `${title} | ${siteConfig.name}` : siteConfig.name;
-  const pageUrl = slug ? `${siteConfig.url}/${slug.replace(/^\//, '')}` : siteConfig.url;
+  const pageUrl = slug ? trustedCanonicalUrl(slug, '/') : siteConfig.url;
   const ogImageUrl = image.startsWith('http') ? image : `${siteConfig.url}${image}`;
 
   return {
