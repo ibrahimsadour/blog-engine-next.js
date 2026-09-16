@@ -1,0 +1,33 @@
+name: Staging smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: HTTPS URL of the staging deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate HTTPS staging URL
+        env:
+          STAGING_URL: ${{ inputs.staging_url }}
+        run: |
+          case "$STAGING_URL" in
+            https://*) ;;
+            *) echo "Staging URL must use HTTPS" >&2; exit 1 ;;
+          esac
+      - name: Check readiness and public routes
+        env:
+          STAGING_URL: ${{ inputs.staging_url }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-all-errors "$STAGING_URL/api/health"
+          curl --fail --silent --show-error --retry 3 "$STAGING_URL/robots.txt" >/dev/null
+          curl --fail --silent --show-error --retry 3 "$STAGING_URL/sitemap.xml" >/dev/null
+          curl --fail --silent --show-error --retry 3 "$STAGING_URL/login" >/dev/null

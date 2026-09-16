@@ -12,6 +12,14 @@ export interface AdminSession {
   role: 'admin';
 }
 
+export function getAdminApiAuthorizationStatus(
+  authenticated: boolean,
+  requestHeaders: Headers
+): 200 | 401 | 403 {
+  if (!authenticated) return 401;
+  return isTrustedRequestOrigin(requestHeaders) ? 200 : 403;
+}
+
 export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
@@ -50,11 +58,14 @@ export async function requireAdminAction(): Promise<AdminSession> {
 export async function authorizeAdminApiRequest(
   request: Request
 ): Promise<NextResponse | null> {
-  if (await isAdminAuthenticated()) {
-    if (isTrustedRequestOrigin(request.headers)) {
-      return null;
-    }
+  const status = getAdminApiAuthorizationStatus(
+    await isAdminAuthenticated(),
+    request.headers
+  );
 
+  if (status === 200) return null;
+
+  if (status === 403) {
     return NextResponse.json(
       { error: 'مصدر الطلب غير موثوق' },
       {

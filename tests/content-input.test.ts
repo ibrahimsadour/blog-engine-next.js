@@ -3,7 +3,7 @@ import test from 'node:test';
 import ExcelJS from 'exceljs';
 import { InputValidationError, normalizeSlug, validateDirectoryInput } from '../lib/content-input';
 import { readXlsxRows, SpreadsheetImportError } from '../lib/import-spreadsheet';
-import { validateImageUpload } from '../lib/media/image-validation';
+import { MAX_IMAGE_BYTES, detectImageType, validateImageUpload } from '../lib/media/image-validation';
 
 test('normalizes Arabic and Latin slugs consistently', () => {
   assert.equal(normalizeSlug('  تصليح__سيارات / الكويت  '), 'تصليح-سيارات-الكويت');
@@ -34,4 +34,8 @@ test('validates uploaded image extension, MIME and magic bytes together', () => 
   assert.equal(validateImageUpload('photo.png', 'image/png', png)?.extension, 'png');
   assert.equal(validateImageUpload('photo.svg', 'image/png', png), null);
   assert.equal(validateImageUpload('photo.png', 'image/jpeg', png), null);
+  assert.equal(validateImageUpload('photo.exe', 'image/png', png), null);
+  assert.equal(validateImageUpload('photo.svg', 'image/svg+xml', new TextEncoder().encode('<svg/>')), null);
+  assert.equal(detectImageType(new TextEncoder().encode('not-an-image')), null);
+  assert.equal(MAX_IMAGE_BYTES, 5 * 1024 * 1024);
 });

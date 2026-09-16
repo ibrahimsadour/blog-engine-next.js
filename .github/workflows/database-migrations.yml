@@ -73,6 +73,16 @@ jobs:
         env:
           DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
 
+      - name: Test database backup and restore
+        run: |
+          mkdir -p "$RUNNER_TEMP/backups"
+          BACKUP_DIR="$RUNNER_TEMP/backups" npm run db:backup > "$RUNNER_TEMP/backup-path.txt"
+          mysql -h 127.0.0.1 -P 3306 -uroot -e 'DROP DATABASE IF EXISTS restore_validation_test; CREATE DATABASE restore_validation_test;'
+          DATABASE_URL='mysql://root@127.0.0.1:3306/restore_validation_test' npm run db:restore -- "$(tail -n 1 "$RUNNER_TEMP/backup-path.txt")"
+          DATABASE_URL='mysql://root@127.0.0.1:3306/restore_validation_test' node scripts/verify-migrated-database.mjs
+        env:
+          DATABASE_URL: ${{ env.FRESH_DATABASE_URL }}
+
       - name: Create a representative legacy database
         run: |
           ADMIN_DATABASE_URL="$SERVER_DATABASE_URL" \

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { generateArticleSchema, generateBreadcrumbSchema } from '../lib/schema';
-import { buildSiteUrl, encodeSlugSegment, escapeXml, trustedCanonicalUrl } from '../lib/site-url';
+import { buildSiteUrl, encodeSlugSegment, escapeXml, latestDate, sitemapUrlEntry, trustedCanonicalUrl } from '../lib/site-url';
 
 test('sitemap paths normalize and encode every slug segment', () => {
   assert.equal(encodeSlugSegment('  خدمة سيارات & سريعة  '), '%D8%AE%D8%AF%D9%85%D8%A9-%D8%B3%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA-%D8%B3%D8%B1%D9%8A%D8%B9%D8%A9');
@@ -35,4 +35,14 @@ test('article schema uses publishedAt and one stable publisher organization', ()
 test('breadcrumb schema rejects an external URL', () => {
   const schema = generateBreadcrumbSchema([{ name: 'صفحة', url: 'https://evil.example/trap' }]);
   assert.doesNotMatch(schema.itemListElement[1].item, /evil\.example/);
+});
+
+test('sitemap entries include escaped URLs and the correct last modification date', () => {
+  const older = new Date('2026-01-01T00:00:00.000Z');
+  const newer = new Date('2026-02-01T00:00:00.000Z');
+  const lastModified = latestDate(older, newer);
+  const xml = sitemapUrlEntry('https://example.com/a?x=1&y=2', lastModified, '0.8');
+  assert.match(xml, /x=1&amp;y=2/);
+  assert.match(xml, /2026-02-01T00:00:00.000Z/);
+  assert.match(xml, /<priority>0.8<\/priority>/);
 });
