@@ -1,5 +1,6 @@
-import { isAutomotiveSite } from '@/lib/site-profile';
 'use server';
+
+import { isAutomotiveSite } from '@/lib/site-profile';
 
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
