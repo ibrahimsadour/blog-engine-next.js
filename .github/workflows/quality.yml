@@ -33,7 +33,7 @@ jobs:
       ADMIN_PASSWORD: ci-admin-password-not-for-production
       SESSION_SECRET: ci-session-secret-with-more-than-thirty-two-characters
       NEXT_PUBLIC_SITE_URL: https://example.com
-      UPLOAD_STORAGE_DIR: ${{ runner.temp }}/blog-engine-uploads
+      UPLOAD_STORAGE_DIR: /tmp/blog-engine-uploads
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
