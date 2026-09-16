@@ -1,3 +1,4 @@
+import { isAutomotiveSite } from '@/lib/site-profile';
 'use server';
 
 import { db } from '@/lib/db';
@@ -274,6 +275,7 @@ export async function saveCarServiceContentAction(formData: FormData) {
 
 export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
   await requireAdminAction();
+  if (!isAutomotiveSite()) throw new Error('ميزة قوالب السيارات غير مفعلة لهذا الموقع');
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
