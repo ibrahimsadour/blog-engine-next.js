@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Upload, Trash2, Edit, Plus, Download } from 'lucide-react';
+import { Upload, Trash2, Edit, Plus } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { AdminListItem } from '@/types/admin';
 
-export default function CarsClient({ initialCars }: { initialCars: any[] }) {
+export default function CarsClient({ initialCars }: { initialCars: AdminListItem[] }) {
   const router = useRouter();
   const [cars, setCars] = useState(initialCars);
   const [uploading, setUploading] = useState(false);
@@ -18,7 +20,7 @@ export default function CarsClient({ initialCars }: { initialCars: any[] }) {
       if (!res.ok) throw new Error('فشل الحذف');
       setCars(cars.filter((c) => c.id !== id));
       toast.success('تم الحذف بنجاح');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحذف');
     }
   };
@@ -33,8 +35,8 @@ export default function CarsClient({ initialCars }: { initialCars: any[] }) {
       setCars([]);
       toast.success(`تم حذف جميع السيارات (${data.count}) بنجاح`);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء الحذف الجماعي');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ أثناء الحذف الجماعي'));
     }
   };
 
@@ -54,8 +56,8 @@ export default function CarsClient({ initialCars }: { initialCars: any[] }) {
       toast.success(`تم استيراد ${data.count} سيارة بنجاح!`);
       router.refresh();
       window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء رفع الملف');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ أثناء رفع الملف'));
     } finally {
       setUploading(false);
     }

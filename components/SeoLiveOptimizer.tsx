@@ -196,7 +196,7 @@ export default function SeoLiveOptimizer({
       <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-xs font-bold text-gray-800">
-            تدقيق الكلمة المفتاحية: {targetKeyword ? <span className="text-blue-600 font-black">"{targetKeyword}"</span> : <span className="text-gray-400">(لم تحدد كلمة بعد)</span>}
+            تدقيق الكلمة المفتاحية: {targetKeyword ? <span className="text-blue-600 font-black">&quot;{targetKeyword}&quot;</span> : <span className="text-gray-400">(لم تحدد كلمة بعد)</span>}
           </span>
           <span className="text-[11px] font-bold text-gray-500">
             إجمالي الكلمات: {totalWords} كلمة

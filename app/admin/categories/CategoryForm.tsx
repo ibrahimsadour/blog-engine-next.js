@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 
 export interface CategoryEditData {
   id: string;
@@ -20,26 +21,11 @@ interface CategoryFormProps {
 
 export default function CategoryForm({ action, editCategory, onCancelEdit }: CategoryFormProps) {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [showInHeader, setShowInHeader] = useState(true);
+  const [name, setName] = useState(editCategory?.name || '');
+  const [slug, setSlug] = useState(editCategory?.slug || '');
+  const [description, setDescription] = useState(editCategory?.description || '');
+  const [showInHeader, setShowInHeader] = useState(editCategory?.showInHeader ?? true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // تحديث الحقول عند اختيار تصنيف للتعديل أو إلغاء التعديل
-  useEffect(() => {
-    if (editCategory) {
-      setName(editCategory.name || '');
-      setSlug(editCategory.slug || '');
-      setDescription(editCategory.description || '');
-      setShowInHeader(editCategory.showInHeader ?? true);
-    } else {
-      setName('');
-      setSlug('');
-      setDescription('');
-      setShowInHeader(true);
-    }
-  }, [editCategory]);
 
   // توليد الـ slug تلقائياً أثناء كتابة الاسم في حال لم يكن في وضع التعديل
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,8 +85,8 @@ export default function CategoryForm({ action, editCategory, onCancelEdit }: Cat
         if (onCancelEdit) onCancelEdit();
         router.refresh();
       }
-    } catch (error: any) {
-      toast.error(error?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setIsSubmitting(false);
     }

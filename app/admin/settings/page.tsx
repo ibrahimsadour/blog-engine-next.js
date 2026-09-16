@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import SettingsForm from './SettingsForm';
 import { verifyAdminPassword } from '@/lib/auth/password';
 import { sanitizeContentHtml, sanitizeCustomHeadCode } from '@/lib/security/content';
+import { getErrorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,8 +54,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
@@ -88,8 +89,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ إعدادات الهيرو' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ إعدادات الهيرو') };
     }
   }
 
@@ -111,8 +112,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ محتوى الصفحة الرئيسية' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ محتوى الصفحة الرئيسية') };
     }
   }
 
@@ -141,8 +142,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ روابط التواصل' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ روابط التواصل') };
     }
   }
 
@@ -172,8 +173,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل حفظ إعدادات الـ SEO' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل حفظ إعدادات الـ SEO') };
     }
   }
 
@@ -202,8 +203,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
@@ -229,8 +230,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 
@@ -252,8 +253,8 @@ export default async function AdminSettingsPage() {
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فشل الحفظ' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'فشل الحفظ') };
     }
   }
 

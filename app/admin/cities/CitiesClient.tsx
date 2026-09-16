@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Upload, Trash2, Edit, Plus } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { AdminListItem } from '@/types/admin';
 
-export default function CitiesClient({ initialCities }: { initialCities: any[] }) {
+export default function CitiesClient({ initialCities }: { initialCities: AdminListItem[] }) {
   const router = useRouter();
   const [cities, setCities] = useState(initialCities);
   const [uploading, setUploading] = useState(false);
@@ -18,7 +20,7 @@ export default function CitiesClient({ initialCities }: { initialCities: any[] }
       if (!res.ok) throw new Error('فشل الحذف');
       setCities(cities.filter((c) => c.id !== id));
       toast.success('تم الحذف بنجاح');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحذف');
     }
   };
@@ -42,8 +44,8 @@ export default function CitiesClient({ initialCities }: { initialCities: any[] }
       toast.success(`تم استيراد ${data.count} مدينة بنجاح!`);
       router.refresh();
       window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء رفع ملف الإكسل');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ أثناء رفع ملف الإكسل'));
     } finally {
       setUploading(false);
     }

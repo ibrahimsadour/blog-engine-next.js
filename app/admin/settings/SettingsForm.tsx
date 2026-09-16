@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import ImageUploader from '@/components/ImageUploader';
+import { getErrorMessage } from '@/lib/errors';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
   ssr: false,
@@ -93,8 +94,8 @@ export default function SettingsForm({
         toast.success('تم حفظ بيانات الهوية والاتصال بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingIdentity(false);
     }
@@ -122,8 +123,8 @@ export default function SettingsForm({
         toast.success('تم حفظ وتحديث واجهة الهيرو بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingHero(false);
     }
@@ -146,8 +147,8 @@ export default function SettingsForm({
         toast.success('تم حفظ ونشر محتوى الصفحة الرئيسية بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingHomeContent(false);
     }
@@ -169,8 +170,8 @@ export default function SettingsForm({
         toast.success('تم حفظ روابط التواصل بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingSocial(false);
     }
@@ -192,8 +193,8 @@ export default function SettingsForm({
         toast.success('تم تحديث بيانات SEO الصفحة الرئيسية بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingHomeSeo(false);
     }
@@ -215,8 +216,8 @@ export default function SettingsForm({
         toast.success('تم حفظ إعدادات الفوتر بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingFooter(false);
     }
@@ -241,8 +242,8 @@ export default function SettingsForm({
         if (passwordInput instanceof HTMLInputElement) passwordInput.value = '';
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingHead(false);
     }
@@ -264,8 +265,8 @@ export default function SettingsForm({
         toast.success('تم تحديث ملف Robots.txt بنجاح!', { id: toastId });
         router.refresh();
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'حدث خطأ غير متوقع', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ غير متوقع'), { id: toastId });
     } finally {
       setLoadingRobots(false);
     }
@@ -564,7 +565,7 @@ export default function SettingsForm({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-gray-700">نص قسم "تواصل معنا"</label>
+            <label className="mb-1 block text-xs font-bold text-gray-700">نص قسم &quot;تواصل معنا&quot;</label>
             <input
               type="text"
               name="footerContactText"

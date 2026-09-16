@@ -54,7 +54,7 @@ export default async function AdminPagesList() {
 
         {pages.length === 0 ? (
           <div className="p-12 text-center text-sm text-gray-500">
-            لا توجد صفحات منشأة حالياً. اضغط على "إنشاء صفحة جديدة" لإضافة صفحات مثل (من نحن، اتصل بنا، سياسة الخصوصية).
+            لا توجد صفحات منشأة حالياً. اضغط على &quot;إنشاء صفحة جديدة&quot; لإضافة صفحات مثل (من نحن، اتصل بنا، سياسة الخصوصية).
           </div>
         ) : (
           <div className="overflow-x-auto">

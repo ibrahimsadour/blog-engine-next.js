@@ -24,7 +24,7 @@ export async function GET(
     });
     if (!article) return NextResponse.json({ message: 'المقال غير موجود' }, { status: 404 });
     return NextResponse.json(article);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'خطأ في جلب المقال' }, { status: 500 });
   }
 }
@@ -132,7 +132,7 @@ export async function DELETE(
     revalidatePath('/sitemap.xml');
 
     return NextResponse.json({ message: 'تم الحذف بنجاح' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'تعذر حذف المقال' }, { status: 500 });
   }
 }

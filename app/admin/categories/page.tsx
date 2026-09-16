@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
 import CategoriesClient from './CategoriesClient';
+import { getErrorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,8 +76,8 @@ export default async function AdminCategoriesPage() {
       revalidatePath('/admin');
       revalidatePath('/', 'layout');
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'تعذر حفظ التصنيف' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'تعذر حفظ التصنيف') };
     }
   }
 
@@ -110,8 +111,8 @@ export default async function AdminCategoriesPage() {
       revalidatePath('/admin');
       revalidatePath('/', 'layout');
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'تعذر حذف التصنيف' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error, 'تعذر حذف التصنيف') };
     }
   }
 

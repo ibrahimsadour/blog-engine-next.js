@@ -138,7 +138,7 @@ export async function GET() {
     });
 
     return NextResponse.json(articles);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'Database error' }, { status: 500 });
   }
 }

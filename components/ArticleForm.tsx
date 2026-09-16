@@ -7,7 +7,10 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
-import { RotateCcw, AlertTriangle, CheckCircle2, ExternalLink, Save, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Save, ArrowRight } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { ActionResult, ArticleEditorData, CategorySummary } from '@/types/admin';
+import DraftRecoveryBanner from '@/components/article/DraftRecoveryBanner';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
   ssr: false,
@@ -18,34 +21,10 @@ const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
   ),
 });
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 interface ArticleFormProps {
-  categories: Category[];
-  action: (formData: FormData) => Promise<any>;
-  initialData?: {
-    id?: string;
-    title?: string;
-    slug?: string;
-    targetKeyword?: string;
-    targetArea?: string;
-    metaTitle?: string;
-    metaDesc?: string;
-    canonicalUrl?: string;
-    excerpt?: string;
-    featuredImage?: string;
-    altText?: string;
-    content?: string;
-    categorySlug?: string;
-    isPublished?: boolean;
-    noIndex?: boolean;
-    noFollow?: boolean;
-    faqs?: { question: string; answer: string }[];
-  };
+  categories: CategorySummary[];
+  action: (formData: FormData) => Promise<ActionResult | void>;
+  initialData?: ArticleEditorData;
 }
 
 export default function ArticleForm({ categories, action, initialData }: ArticleFormProps) {
@@ -82,29 +61,24 @@ export default function ArticleForm({ categories, action, initialData }: Article
       : [{ question: '', answer: '' }]
   );
 
-  const [hasDraft, setHasDraft] = useState(false);
+  const [hasDraft, setHasDraft] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return false;
+      const parsed = JSON.parse(saved) as Partial<ArticleEditorData>;
+      return Boolean(parsed.title || parsed.content);
+    } catch { return false; }
+  });
   const [isSavedLocally, setIsSavedLocally] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.title || parsed.content) {
-          setHasDraft(true);
-        }
-      }
-    } catch {}
-  }, [storageKey]);
-
-  useEffect(() => {
     if (!title && !content && !excerpt && !targetKeyword) return;
 
-    setIsDirty(true);
-    setIsSavedLocally(false);
-
     const timer = setTimeout(() => {
+      setIsDirty(true);
+      setIsSavedLocally(false);
       const draftData = {
         title,
         slug,
@@ -289,8 +263,8 @@ export default function ArticleForm({ categories, action, initialData }: Article
       });
 
       router.refresh();
-    } catch (error: any) {
-      toast.error(error?.message || 'تعذر حفظ المقال، يرجى المحاولة مرة أخرى', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'تعذر حفظ المقال، يرجى المحاولة مرة أخرى'), { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -365,31 +339,7 @@ export default function ArticleForm({ categories, action, initialData }: Article
       </div>
 
       {/* شريط استرجاع المسودة */}
-      {hasDraft && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-900 sm:text-sm">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-            <span>يوجد نسخة محفوظة تلقائياً لهذا المقال من جلستك السابقة، هل ترغب باستعادتها؟</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleRestoreDraft}
-              className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>استعادة البيانات</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDiscardDraft}
-              className="rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
-            >
-              تجاهل
-            </button>
-          </div>
-        </div>
-      )}
+      {hasDraft && <DraftRecoveryBanner onRestore={handleRestoreDraft} onDiscard={handleDiscardDraft} />}
 
       {/* العنوان والرابط الدائم */}
       <div className="grid gap-4 sm:grid-cols-2">

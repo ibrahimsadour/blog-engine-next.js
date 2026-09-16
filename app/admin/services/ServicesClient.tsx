@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Upload, Trash2, Edit, Plus } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { AdminListItem } from '@/types/admin';
 
-export default function ServicesClient({ initialServices }: { initialServices: any[] }) {
+export default function ServicesClient({ initialServices }: { initialServices: AdminListItem[] }) {
   const router = useRouter();
   const [services, setServices] = useState(initialServices);
   const [uploading, setUploading] = useState(false);
@@ -18,7 +20,7 @@ export default function ServicesClient({ initialServices }: { initialServices: a
       if (!res.ok) throw new Error('فشل الحذف');
       setServices(services.filter((s) => s.id !== id));
       toast.success('تم الحذف بنجاح');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحذف');
     }
   };
@@ -33,8 +35,8 @@ export default function ServicesClient({ initialServices }: { initialServices: a
       setServices([]);
       toast.success(`تم حذف جميع الخدمات (${data.count}) بنجاح`);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء الحذف الجماعي');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ أثناء الحذف الجماعي'));
     }
   };
 
@@ -54,8 +56,8 @@ export default function ServicesClient({ initialServices }: { initialServices: a
       toast.success(`تم استيراد ${data.count} خدمة بنجاح!`);
       router.refresh();
       window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء رفع الملف');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'حدث خطأ أثناء رفع الملف'));
     } finally {
       setUploading(false);
     }

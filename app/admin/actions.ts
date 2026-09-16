@@ -26,7 +26,7 @@ export async function deleteArticleAction(id: string) {
 
     revalidatePath('/admin');
     revalidatePath('/');
-  } catch (error) {
+  } catch {
     throw new Error('تعذر حذف المقال من قاعدة البيانات');
   }
 }

@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
 import { RotateCcw, AlertTriangle, CheckCircle2, ExternalLink, Save, ArrowRight } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { ArticleEditorData, ArticleFaq, CategorySummary } from '@/types/admin';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
   ssr: false,
@@ -19,8 +21,8 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
 });
 
 interface EditArticleFormProps {
-  article: any;
-  categories: any[];
+  article: Omit<ArticleEditorData, 'faqs'> & { id: string; faqs?: unknown };
+  categories: CategorySummary[];
   updateAction: (formData: FormData) => Promise<void>;
 }
 
@@ -49,35 +51,33 @@ export default function EditArticleForm({
   const [noFollow, setNoFollow] = useState<boolean>(article.noFollow ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const initialFaqs =
+  const initialFaqs: ArticleFaq[] =
     Array.isArray(article.faqs) && article.faqs.length > 0
-      ? article.faqs
+      ? article.faqs.filter((faq): faq is ArticleFaq =>
+          typeof faq === 'object' && faq !== null &&
+          typeof (faq as ArticleFaq).question === 'string' &&
+          typeof (faq as ArticleFaq).answer === 'string')
       : [{ question: '', answer: '' }];
 
   const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>(initialFaqs);
-  const [hasDraft, setHasDraft] = useState(false);
+  const [hasDraft, setHasDraft] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return false;
+      const parsed = JSON.parse(saved) as Partial<ArticleEditorData>;
+      return Boolean(parsed.title || parsed.content);
+    } catch { return false; }
+  });
   const [isSavedLocally, setIsSavedLocally] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.title || parsed.content) {
-          setHasDraft(true);
-        }
-      }
-    } catch {}
-  }, [storageKey]);
-
-  useEffect(() => {
     if (!title && !content && !excerpt && !targetKeyword) return;
 
-    setIsDirty(true);
-    setIsSavedLocally(false);
-
     const timer = setTimeout(() => {
+      setIsDirty(true);
+      setIsSavedLocally(false);
       const draftData = {
         title,
         slug,
@@ -259,8 +259,8 @@ export default function EditArticleForm({
       });
 
       router.refresh();
-    } catch (error: any) {
-      toast.error(error?.message || 'تعذر تحديث المقال، يرجى المحاولة لاحقاً', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'تعذر تحديث المقال، يرجى المحاولة لاحقاً'), { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
