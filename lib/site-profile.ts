@@ -27,3 +27,9 @@ export function getSiteFeatures(profile: SiteProfile = getSiteProfile()): SiteFe
 export function isAutomotiveSite(profile: SiteProfile = getSiteProfile()): boolean {
   return profile === 'automotive';
 }
+
+export function isDynamicContentEnabled(
+  value: string | undefined = process.env.DYNAMIC_CONTENT_ENABLED,
+): boolean {
+  return value?.trim().toLowerCase() !== 'false';
+}
