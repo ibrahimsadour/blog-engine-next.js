@@ -21,7 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
 
   const settings = await getSiteSettings();
-  const { siteName, siteTitle, siteDescription, siteIcon } = settings;
+  const { siteName, siteTitle, siteDescription, siteIcon, siteIconVersion } = settings;
+  const versionedSiteIcon = siteIcon
+    ? `${siteIcon}${siteIcon.includes('?') ? '&' : '?'}v=${siteIconVersion}`
+    : '';
 
   return {
     metadataBase: new URL(siteUrl),
@@ -31,11 +34,11 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     applicationName: siteName,
-    icons: siteIcon
+    icons: versionedSiteIcon
       ? {
-          icon: siteIcon,
-          shortcut: siteIcon,
-          apple: siteIcon,
+          icon: versionedSiteIcon,
+          shortcut: versionedSiteIcon,
+          apple: versionedSiteIcon,
         }
       : undefined,
     authors: siteName ? [{ name: siteName }] : undefined,
