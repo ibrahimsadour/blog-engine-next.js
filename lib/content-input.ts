@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { sanitizeContentHtml } from '@/lib/security/content';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const CONTENT_LIMITS = {
   name: 160,
@@ -194,9 +195,14 @@ export async function assertTopLevelSlugAvailable(
   slug: string,
   current?: { owner: SlugOwner; id: string },
 ): Promise<void> {
+  const dynamicContent = isDynamicContentEnabled();
   const [city, car, article, page] = await Promise.all([
-    client.city.findFirst({ where: { slug, ...(current?.owner === 'city' ? { NOT: { id: current.id } } : {}) }, select: { id: true } }),
-    client.car.findFirst({ where: { slug, ...(current?.owner === 'car' ? { NOT: { id: current.id } } : {}) }, select: { id: true } }),
+    dynamicContent
+      ? client.city.findFirst({ where: { slug, ...(current?.owner === 'city' ? { NOT: { id: current.id } } : {}) }, select: { id: true } })
+      : Promise.resolve(null),
+    dynamicContent
+      ? client.car.findFirst({ where: { slug, ...(current?.owner === 'car' ? { NOT: { id: current.id } } : {}) }, select: { id: true } })
+      : Promise.resolve(null),
     client.article.findFirst({ where: { slug, ...(current?.owner === 'article' ? { NOT: { id: current.id } } : {}) }, select: { id: true } }),
     client.page.findFirst({ where: { slug, ...(current?.owner === 'page' ? { NOT: { id: current.id } } : {}) }, select: { id: true } }),
   ]);
