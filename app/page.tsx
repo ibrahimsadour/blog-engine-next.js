@@ -126,9 +126,15 @@ export default async function HomePage() {
                 alt={settings.heroTitle}
                 fill
                 priority
-                className="object-cover object-center"
+                className="object-cover"
+                style={{ objectPosition: settings.heroBgPosition }}
               />
-              <div className="absolute inset-0 bg-gray-950/75 backdrop-blur-[2px]" />
+              <div
+                className="absolute inset-0 backdrop-blur-[1px]"
+                style={{
+                  backgroundColor: `rgba(3, 7, 18, ${settings.heroOverlayOpacity / 100})`,
+                }}
+              />
             </div>
           )}
 
