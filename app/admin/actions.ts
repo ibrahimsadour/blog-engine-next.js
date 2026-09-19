@@ -1,6 +1,6 @@
 'use server';
 
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
@@ -163,6 +163,7 @@ export async function updateArticleAction(id: string, formData: FormData) {
 
 export async function saveCityServiceContentAction(formData: FormData) {
   await requireAdminAction();
+  if (!isDynamicContentEnabled()) throw new Error('ميزة المحتوى الديناميكي غير مفعلة لهذا الموقع');
 
   const { ownerId: cityId, serviceId, customTitle, customDescription, metaTitle, metaDesc } =
     validateCustomServiceContent({ ownerId: formData.get('cityId'), serviceId: formData.get('serviceId'), customTitle: formData.get('customTitle'), customDescription: formData.get('customDescription'), metaTitle: formData.get('metaTitle'), metaDesc: formData.get('metaDesc') }, 'city');
@@ -198,6 +199,7 @@ export async function saveCityServiceContentAction(formData: FormData) {
 
 export async function saveGlobalServiceTemplateAction(formData: FormData) {
   await requireAdminAction();
+  if (!isDynamicContentEnabled()) throw new Error('ميزة المحتوى الديناميكي غير مفعلة لهذا الموقع');
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
   const descTemplate = sanitizeContentHtml(formData.get('descTemplate'));
@@ -241,6 +243,7 @@ export async function saveGlobalServiceTemplateAction(formData: FormData) {
 }
 export async function saveCarServiceContentAction(formData: FormData) {
   await requireAdminAction();
+  if (!isDynamicContentEnabled()) throw new Error('ميزة المحتوى الديناميكي غير مفعلة لهذا الموقع');
 
   const { ownerId: carId, serviceId, customTitle, customDescription, metaTitle, metaDesc } =
     validateCustomServiceContent({ ownerId: formData.get('carId'), serviceId: formData.get('serviceId'), customTitle: formData.get('customTitle'), customDescription: formData.get('customDescription'), metaTitle: formData.get('metaTitle'), metaDesc: formData.get('metaDesc') }, 'car');
@@ -276,6 +279,7 @@ export async function saveCarServiceContentAction(formData: FormData) {
 
 export async function saveGlobalCarServiceTemplateAction(formData: FormData) {
   await requireAdminAction();
+  if (!isDynamicContentEnabled()) throw new Error('ميزة المحتوى الديناميكي غير مفعلة لهذا الموقع');
   if (!isAutomotiveSite()) throw new Error('ميزة قوالب السيارات غير مفعلة لهذا الموقع');
 
   const titleTemplate = (formData.get('titleTemplate') as string) || '';
