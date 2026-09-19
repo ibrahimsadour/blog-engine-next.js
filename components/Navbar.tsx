@@ -4,7 +4,7 @@ import { getSiteSettings } from '@/lib/settings';
 import { getNavigationData } from '@/lib/navigation';
 
 export default async function Navbar() {
-  const [{ siteName, siteLogo, phoneNumber }, navigation] =
+  const [{ siteName, siteLogo, siteLogoWidth, siteLogoHeight, phoneNumber }, navigation] =
     await Promise.all([
       getSiteSettings(),
       getNavigationData(),
@@ -16,12 +16,20 @@ export default async function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
         <Link href="/" className="flex items-center gap-3">
           {siteLogo ? (
-            <div className="relative h-10 w-36">
+            <div
+              className="relative shrink-0"
+              style={{
+                width: `${siteLogoWidth}px`,
+                height: `${siteLogoHeight}px`,
+                maxWidth: '55vw',
+              }}
+            >
               <Image
                 src={siteLogo}
                 alt={siteName}
                 fill
-                className="object-contain"
+                sizes="(max-width: 640px) 55vw, 400px"
+                className="object-contain object-right"
                 priority
               />
             </div>
