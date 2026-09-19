@@ -1,8 +1,7 @@
 import { db } from '@/lib/db';
-import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { notFound } from 'next/navigation';
 import CarForm from '../../CarForm';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export default async function EditCarPage({ params }: { params: Promise<{ id: string }> }) {
   if (!isDynamicContentEnabled()) notFound();
