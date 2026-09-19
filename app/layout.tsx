@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
 
   const settings = await getSiteSettings();
-  const { siteName, siteTitle, siteDescription } = settings;
+  const { siteName, siteTitle, siteDescription, siteIcon } = settings;
 
   return {
     metadataBase: new URL(siteUrl),
@@ -31,6 +31,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     applicationName: siteName,
+    icons: siteIcon
+      ? {
+          icon: siteIcon,
+          shortcut: siteIcon,
+          apple: siteIcon,
+        }
+      : undefined,
     authors: siteName ? [{ name: siteName }] : undefined,
     generator: 'Next.js',
     referrer: 'origin-when-cross-origin',
