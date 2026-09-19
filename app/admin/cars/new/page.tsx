@@ -1,7 +1,6 @@
 import CarForm from '../CarForm';
-import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { notFound } from 'next/navigation';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export default function NewCarPage() {
   if (!isDynamicContentEnabled()) notFound();
