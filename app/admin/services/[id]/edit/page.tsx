@@ -3,8 +3,8 @@ import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { notFound } from 'next/navigation';
 import ServiceForm from '../../ServiceForm';
 
-export default async function EditServicePage({
-  if (!isDynamicContentEnabled()) notFound(); params }: { params: Promise<{ id: string }> }) {
+export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
+  if (!isDynamicContentEnabled()) notFound();
   const resolvedParams = await params;
   const service = await db.service.findUnique({ where: { id: resolvedParams.id } });
   if (!service) notFound();
