@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { db } from '@/lib/db';
 import { authorizeAdminApiRequest } from '@/lib/auth/authorization';
 import { assertTopLevelSlugAvailable, InputValidationError, publicError, validateDirectoryInput } from '@/lib/content-input';
 import { validateDirectoryRows } from '@/lib/directory-import';
 import { readXlsxRows } from '@/lib/import-spreadsheet';
 import { revalidateDirectory } from '@/lib/revalidate-directory';
+function dynamicContentFeatureDisabled() {
+  return NextResponse.json({ error: 'ميزة المحتوى الديناميكي غير مفعلة لهذا الموقع', code: 'FEATURE_DISABLED' }, { status: 404 });
+}
+
 
 export async function GET() {
+  if (!isDynamicContentEnabled()) return dynamicContentFeatureDisabled();
   try {
     return NextResponse.json(await db.city.findMany({ orderBy: { sortOrder: 'asc' } }));
   } catch {
@@ -15,6 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isDynamicContentEnabled()) return dynamicContentFeatureDisabled();
   const unauthorized = await authorizeAdminApiRequest(request);
   if (unauthorized) return unauthorized;
   try {
