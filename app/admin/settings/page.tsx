@@ -36,6 +36,7 @@ export default async function AdminSettingsPage() {
       const updates = [
         { key: 'site_name', value: siteName },
         { key: 'site_logo', value: (formData.get('siteLogo') as string)?.trim() || '' },
+        { key: 'site_icon', value: (formData.get('siteIcon') as string)?.trim() || '' },
         { key: 'phone_number', value: phoneNumber },
         { key: 'whatsapp_number', value: whatsappNumber || phoneNumber.replace(/[^\d]/g, '') },
       ];
