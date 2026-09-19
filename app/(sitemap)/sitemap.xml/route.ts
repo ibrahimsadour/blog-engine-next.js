@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { escapeXml, getSiteUrl } from '@/lib/site-url';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +12,18 @@ export async function GET() {
     <lastmod>${now}</lastmod>
   </sitemap>`;
 
+  const dynamicContent = isDynamicContentEnabled();
   const entries = [
     sitemap('page-sitemap.xml'),
     sitemap('post-sitemap.xml'),
     sitemap('category-sitemap.xml'),
-    sitemap('directory-sitemap.xml'),
-    sitemap('city-service-sitemap.xml'),
-    ...(isAutomotiveSite() ? [sitemap('car-service-sitemap.xml')] : []),
+    ...(dynamicContent
+      ? [
+          sitemap('directory-sitemap.xml'),
+          sitemap('city-service-sitemap.xml'),
+          ...(isAutomotiveSite() ? [sitemap('car-service-sitemap.xml')] : []),
+        ]
+      : []),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
