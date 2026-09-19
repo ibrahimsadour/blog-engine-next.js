@@ -2,12 +2,12 @@ import { db } from '@/lib/db';
 import { saveGlobalCarServiceTemplateAction } from '../actions';
 import CarServiceTemplateForm from './CarServiceTemplateForm';
 import { notFound } from 'next/navigation';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const revalidate = 0;
 
 export default async function AdminCarServiceTemplatesPage() {
-  if (!isAutomotiveSite()) notFound();
+  if (!isDynamicContentEnabled() || !isAutomotiveSite()) notFound();
   const template = await db.globalCarServiceTemplate.findFirst();
 
   return (
