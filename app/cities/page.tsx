@@ -3,10 +3,13 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { buildSiteUrl } from '@/lib/site-url';
 import Pagination from '@/components/Pagination';
+import { notFound } from 'next/navigation';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const revalidate = 3600;
 
 export function generateMetadata(): Metadata {
+  if (!isDynamicContentEnabled()) notFound();
   return {
     title: 'دليل المدن ومناطق الخدمة',
     description: 'تصفح المدن والمناطق التي تتوفر فيها خدمات الصيانة والمساعدة.',
@@ -17,6 +20,7 @@ export function generateMetadata(): Metadata {
 const PAGE_SIZE = 24;
 
 export default async function CitiesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  if (!isDynamicContentEnabled()) notFound();
   const requestedPage = Number((await searchParams).page);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [cities, count] = await Promise.all([
