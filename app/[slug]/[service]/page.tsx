@@ -6,13 +6,14 @@ import CarServiceView from '@/components/CarServiceView';
 import { buildSiteUrl } from '@/lib/site-url';
 import { cache } from 'react';
 import { getSiteSettings } from '@/lib/settings';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 type Props = {
   params: Promise<{ slug: string; service: string }>;
 };
 
 const getServiceRouteData = cache(async (slug: string, serviceSlug: string) => {
+  if (!isDynamicContentEnabled()) return { city: null, car: null, service: null, customContent: null, template: null };
   const [city, car, service] = await Promise.all([
     db.city.findUnique({ where: { slug, isActive: true } }),
     isAutomotiveSite()
@@ -101,6 +102,7 @@ async function getSiteConfig() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (!isDynamicContentEnabled()) notFound();
   const { slug, service: serviceSlug } = await params;
 
   const { city, car, service, customContent, template } = await getServiceRouteData(slug, serviceSlug);
@@ -172,6 +174,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function DynamicServiceCityOrCarPage({ params }: Props) {
+  if (!isDynamicContentEnabled()) notFound();
   const { slug, service: serviceSlug } = await params;
 
   const { city, car, service, customContent, template } = await getServiceRouteData(slug, serviceSlug);
