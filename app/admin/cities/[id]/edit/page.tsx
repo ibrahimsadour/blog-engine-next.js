@@ -1,8 +1,10 @@
 import { db } from '@/lib/db';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { notFound } from 'next/navigation';
 import CityForm from '../../CityForm';
 
-export default async function EditCityPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditCityPage({
+  if (!isDynamicContentEnabled()) notFound(); params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const city = await db.city.findUnique({ where: { id: resolvedParams.id } });
   if (!city) notFound();
