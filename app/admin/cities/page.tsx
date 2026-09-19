@@ -1,10 +1,13 @@
+import { notFound } from 'next/navigation';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { db } from '@/lib/db';
 import CitiesClient from './CitiesClient';
 import Pagination from '@/components/Pagination';
 
 const PAGE_SIZE = 50;
 
-export default async function CitiesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function CitiesPage({
+  if (!isDynamicContentEnabled()) notFound(); searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const requestedPage = Number((await searchParams).page);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [cities, count] = await Promise.all([
