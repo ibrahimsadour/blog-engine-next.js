@@ -19,7 +19,7 @@ import { isAdminAuthenticated } from '@/lib/auth/authorization';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
 import { getSiteSettings } from '@/lib/settings';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const revalidate = 3600;
 
@@ -95,14 +95,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const decodedSlug = decodeURIComponent(rawSlug).trim();
   const siteUrl = getSiteUrl();
   const { phone, siteName } = await getSiteConfig();
+  const dynamicContent = isDynamicContentEnabled();
 
   // 1. التحقق من المدن
-  const city = await db.city.findFirst({
+  const city = dynamicContent ? await db.city.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
       isActive: true,
     },
-  });
+  }) : null;
 
   if (city) {
     const title = parseContentVariables(city.metaTitle || `خدماتنا في ${city.name}`, phone, siteName);
@@ -119,7 +120,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 1.5. التحقق من السيارات
-  const car = isAutomotiveSite()
+  const car = dynamicContent && isAutomotiveSite()
     ? await db.car.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
@@ -250,14 +251,15 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   const isAdmin = await isAdminAuthenticated();
 
   const { phone, siteName } = await getSiteConfig();
+  const dynamicContent = isDynamicContentEnabled();
 
   // 1. فحص ما إذا كان الـ slug يعود لمدينة (City)
-  const city = await db.city.findFirst({
+  const city = dynamicContent ? await db.city.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
       isActive: true,
     },
-  });
+  }) : null;
 
   if (city) {
     const services = await db.service.findMany({
@@ -322,7 +324,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
   }
 
   // 1.5. فحص ما إذا كان الـ slug يعود لسيارة (Car)
-  const car = isAutomotiveSite()
+  const car = dynamicContent && isAutomotiveSite()
     ? await db.car.findFirst({
     where: {
       OR: [{ slug: rawSlug }, { slug: decodedSlug }, { slug: decodedSlug.toLowerCase() }],
