@@ -16,11 +16,12 @@ export function getSiteProfile(value: string | undefined = process.env.SITE_PROF
 
 export function getSiteFeatures(profile: SiteProfile = getSiteProfile()): SiteFeatures {
   const automotive = profile === 'automotive';
+  const dynamicContent = isDynamicContentEnabled();
 
   return {
     automotive,
-    cars: automotive,
-    carServiceTemplates: automotive,
+    cars: automotive && dynamicContent,
+    carServiceTemplates: automotive && dynamicContent,
   };
 }
 
