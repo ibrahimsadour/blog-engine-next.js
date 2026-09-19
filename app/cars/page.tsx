@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { buildSiteUrl } from '@/lib/site-url';
 import { connection } from 'next/server';
 import { notFound } from 'next/navigation';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  if (!isAutomotiveSite()) notFound();
+  if (!isDynamicContentEnabled() || !isAutomotiveSite()) notFound();
 
   return {
     title: 'دليل ماركات وأنواع السيارات',
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CarsPage() {
-  if (!isAutomotiveSite()) notFound();
+  if (!isDynamicContentEnabled() || !isAutomotiveSite()) notFound();
   await connection();
   const cars = await db.car.findMany({
     where: { isActive: true },
