@@ -1,7 +1,10 @@
+import { notFound } from 'next/navigation';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { db } from '@/lib/db';
 import { saveCityServiceContentAction } from '../actions';
 
 export default async function AdminCityServicesPage() {
+  if (!isDynamicContentEnabled()) notFound();
   const [cities, services, contents] = await Promise.all([
     db.city.findMany({ orderBy: { sortOrder: 'asc' } }),
     db.service.findMany({ orderBy: { sortOrder: 'asc' } }),
