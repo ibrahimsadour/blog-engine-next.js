@@ -291,6 +291,16 @@ export default function SettingsForm({
           </p>
         </div>
 
+        <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+          <label className="mb-2 block text-xs font-bold text-gray-700">أيقونة الموقع (Favicon)</label>
+          <div className="max-w-md">
+            <ImageUploader initialImage={initialSettings['site_icon'] || ''} name="siteIcon" />
+          </div>
+          <p className="mt-1.5 text-[11px] text-gray-400">
+            ارفع أيقونة مربعة للموقع ويفضل مقاس 512×512 بصيغة PNG أو WebP أو JPG وستظهر في تبويب المتصفح ونتائج الأجهزة المدعومة
+          </p>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs font-bold text-gray-700">
