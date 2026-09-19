@@ -29,6 +29,8 @@ export default async function AdminSettingsPage() {
       const phoneNumber = (formData.get('phoneNumber') as string)?.trim();
       const rawWhatsapp = (formData.get('whatsappNumber') as string)?.trim();
       const whatsappNumber = rawWhatsapp.replace(/[^\d]/g, '');
+      const logoWidth = Math.min(400, Math.max(80, Number(formData.get('siteLogoWidth')) || 180));
+      const logoHeight = Math.min(120, Math.max(24, Number(formData.get('siteLogoHeight')) || 52));
 
       if (!siteName) return { success: false, error: 'اسم الموقع مطلوب' };
       if (!phoneNumber) return { success: false, error: 'رقم الهاتف مطلوب' };
@@ -36,7 +38,10 @@ export default async function AdminSettingsPage() {
       const updates = [
         { key: 'site_name', value: siteName },
         { key: 'site_logo', value: (formData.get('siteLogo') as string)?.trim() || '' },
+        { key: 'site_logo_width', value: String(logoWidth) },
+        { key: 'site_logo_height', value: String(logoHeight) },
         { key: 'site_icon', value: (formData.get('siteIcon') as string)?.trim() || '' },
+        { key: 'site_icon_version', value: String(Date.now()) },
         { key: 'phone_number', value: phoneNumber },
         { key: 'whatsapp_number', value: whatsappNumber || phoneNumber.replace(/[^\d]/g, '') },
       ];
@@ -69,8 +74,16 @@ export default async function AdminSettingsPage() {
       const heroTitle = (formData.get('heroTitle') as string)?.trim();
       if (!heroTitle) return { success: false, error: 'العنوان الرئيسي مطلوب' };
 
+      const overlayOpacity = Math.min(90, Math.max(0, Number(formData.get('heroOverlayOpacity') ?? 55)));
+      const requestedPosition = (formData.get('heroBgPosition') as string)?.trim();
+      const heroBgPosition = ['center', 'top', 'bottom'].includes(requestedPosition)
+        ? requestedPosition
+        : 'center';
+
       const updates = [
         { key: 'hero_bg_image', value: (formData.get('heroBgImage') as string)?.trim() || '' },
+        { key: 'hero_overlay_opacity', value: String(overlayOpacity) },
+        { key: 'hero_bg_position', value: heroBgPosition },
         { key: 'hero_badge', value: (formData.get('heroBadge') as string)?.trim() || '' },
         { key: 'hero_title', value: heroTitle },
         { key: 'hero_subtitle', value: (formData.get('heroSubtitle') as string)?.trim() || '' },
