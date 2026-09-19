@@ -289,6 +289,36 @@ export default function SettingsForm({
           <p className="mt-1.5 text-[11px] text-gray-400">
             يمكنك رفع الشعار مباشرة بصيغة WebP أو PNG أو JPG مع إمكانية حذفه أو استبداله
           </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-bold text-gray-700">عرض الشعار في الهيدر بالبكسل</label>
+              <input
+                type="number"
+                name="siteLogoWidth"
+                min={80}
+                max={400}
+                step={1}
+                defaultValue={initialSettings['site_logo_width'] || '180'}
+                className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-bold text-gray-700">ارتفاع الشعار في الهيدر بالبكسل</label>
+              <input
+                type="number"
+                name="siteLogoHeight"
+                min={24}
+                max={120}
+                step={1}
+                defaultValue={initialSettings['site_logo_height'] || '52'}
+                className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+              />
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-gray-400">
+            المقاس الافتراضي 180×52 ويمكنك تكبيره حتى 400×120 حسب شكل الشعار
+          </p>
         </div>
 
         <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
@@ -297,7 +327,7 @@ export default function SettingsForm({
             <ImageUploader initialImage={initialSettings['site_icon'] || ''} name="siteIcon" />
           </div>
           <p className="mt-1.5 text-[11px] text-gray-400">
-            ارفع أيقونة مربعة للموقع ويفضل مقاس 512×512 بصيغة PNG أو WebP أو JPG وستظهر في تبويب المتصفح ونتائج الأجهزة المدعومة
+            يمكنك تغيير الأيقونة أو حذفها في أي وقت ويفضل مقاس 512×512 بصيغة PNG أو WebP أو JPG ويتم تحديث رابطها تلقائيا لتجاوز كاش المتصفح
           </p>
         </div>
 
@@ -374,8 +404,36 @@ export default function SettingsForm({
             <ImageUploader initialImage={initialSettings['hero_bg_image'] || ''} name="heroBgImage" />
           </div>
           <p className="mt-1.5 text-[11px] text-gray-400">
-            صورة عالية الدقة تظهر في خلفية القسم الرئيسي مع طبقة تعتيم احترافية لقراءة النصوص
+            صورة عالية الدقة تظهر خلف العنوان الرئيسي ويمكنك التحكم بدرجة التعتيم ومكان تمركز الصورة من الحقول التالية
           </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-bold text-gray-700">درجة تعتيم الصورة</label>
+              <input
+                type="number"
+                name="heroOverlayOpacity"
+                min={0}
+                max={90}
+                step={5}
+                defaultValue={initialSettings['hero_overlay_opacity'] || '55'}
+                className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+              />
+              <p className="mt-1 text-[11px] text-gray-400">0 بدون تعتيم و90 تعتيم قوي</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-bold text-gray-700">موضع صورة الخلفية</label>
+              <select
+                name="heroBgPosition"
+                defaultValue={initialSettings['hero_bg_position'] || 'center'}
+                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm focus:border-blue-500 focus:outline-hidden"
+              >
+                <option value="center">المنتصف</option>
+                <option value="top">الاعلى</option>
+                <option value="bottom">الاسفل</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
