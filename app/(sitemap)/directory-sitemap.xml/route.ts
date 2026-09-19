@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { buildSiteUrl, sitemapUrlEntry } from '@/lib/site-url';
 import { isAutomotiveSite } from '@/lib/site-profile';
 import { NextResponse } from 'next/server';
@@ -6,6 +7,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  if (!isDynamicContentEnabled()) return new NextResponse('Not Found', { status: 404 });
   const [cities, cars] = await Promise.all([
     db.city.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
     isAutomotiveSite()
