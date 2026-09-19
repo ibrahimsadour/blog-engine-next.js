@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
 import { requireAdmin, requireAdminAction } from '@/lib/auth/authorization';
-import { isAutomotiveSite } from '@/lib/site-profile';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export default async function AdminLayout({
   children,
@@ -11,7 +11,8 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   await requireAdmin();
-  const automotive = isAutomotiveSite();
+  const dynamicContent = isDynamicContentEnabled();
+  const automotive = dynamicContent && isAutomotiveSite();
 
   async function logoutAction() {
     'use server';
@@ -65,49 +66,54 @@ export default async function AdminLayout({
                 <span>التصنيفات</span>
               </Link>
 
-              <Link
-                href="/admin/cities"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-              >
-                <span>📁</span>
-                <span>المدن</span>
-              </Link>
-
-              {automotive && (
+              {dynamicContent && (
                 <>
-                  <Link
-                    href="/admin/cars"
-                    className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    <span>📁</span>
-                    <span>السيارات</span>
-                  </Link>
-
-                  <Link
-                    href="/admin/car-service-templates"
-                    className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    <span>🚘</span>
-                    <span>قوالب الخدمات والسيارات</span>
-                  </Link>
-                </>
+                <Link
+                  href="/admin/cities"
+                  className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <span>📁</span>
+                  <span>المدن</span>
+                </Link>
+  
+                {automotive && (
+                  <>
+                    <Link
+                      href="/admin/cars"
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <span>📁</span>
+                      <span>السيارات</span>
+                    </Link>
+  
+                    <Link
+                      href="/admin/car-service-templates"
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <span>🚘</span>
+                      <span>قوالب الخدمات والسيارات</span>
+                    </Link>
+                  </>
+                )}
+  
+                <Link
+                  href="/admin/services"
+                  className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <span>📁</span>
+                  <span>الخدمات</span>
+                </Link>
+  
+                <Link
+                  href="/admin/service-templates"
+                  className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <span>📐</span>
+                  <span>قوالب الخدمات والمدن</span>
+                </Link>
+  
+                  </>
               )}
-
-              <Link
-                href="/admin/services"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-              >
-                <span>📁</span>
-                <span>الخدمات</span>
-              </Link>
-
-              <Link
-                href="/admin/service-templates"
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-              >
-                <span>📐</span>
-                <span>قوالب الخدمات والمدن</span>
-              </Link>
 
               <Link
                 href="/admin/settings"
