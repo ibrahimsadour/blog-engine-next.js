@@ -1,8 +1,11 @@
+import { notFound } from 'next/navigation';
+import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { db } from '@/lib/db';
 import { saveGlobalServiceTemplateAction } from '../actions';
 import ServiceTemplateForm from './ServiceTemplateForm';
 
 export default async function AdminServiceTemplatesPage() {
+  if (!isDynamicContentEnabled()) notFound();
   const template = await db.globalServiceTemplate.findFirst();
 
   return (
