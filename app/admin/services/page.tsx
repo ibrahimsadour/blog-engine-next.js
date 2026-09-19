@@ -6,8 +6,8 @@ import Pagination from '@/components/Pagination';
 
 const PAGE_SIZE = 50;
 
-export default async function ServicesPage({
-  if (!isDynamicContentEnabled()) notFound(); searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  if (!isDynamicContentEnabled()) notFound();
   const requestedPage = Number((await searchParams).page);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [services, count] = await Promise.all([
