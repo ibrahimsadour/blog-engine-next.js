@@ -28,6 +28,7 @@ export async function getSiteSettings() {
     siteTitle: map['site_title'] || map['meta_title'] || map['site_name'] || 'دليل الخدمات السريعة',
     siteDescription: map['site_description'] || map['meta_description'] || '',
     siteLogo: map['site_logo'] || '',
+    siteIcon: map['site_icon'] || '',
     phoneNumber: map['phone_number'] || '+96500000000',
     whatsappNumber: map['whatsapp_number'] || map['phone_number']?.replace(/[^\d]/g, '') || '96500000000',
 
