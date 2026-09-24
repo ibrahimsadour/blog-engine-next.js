@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import TableOfContents from '@/components/TableOfContents';
+import { prepareDynamicContent, type ContentHeading } from '@/lib/dynamic-table-of-contents';
 import { generateBreadcrumbSchema } from '@/lib/schema';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
@@ -141,6 +143,17 @@ export default function CarServiceView({
     ${selectedNeighborhood ? `<div class="my-6 p-4 bg-gray-50 rounded-lg border text-base text-gray-700">${selectedNeighborhood}</div>` : ''}
     ${selectedOutro ? `<div class="mt-6 text-lg font-medium">${selectedOutro}</div>` : ''}
   `);
+  const { html: contentWithIds, headings: contentHeadings } = prepareDynamicContent(fullHtmlContent);
+  const headings: ContentHeading[] = [
+    ...contentHeadings,
+    ...(selectedTestimonials.length ? [{ id: 'car-service-testimonials', text: `آراء وتقييمات ملاك سيارات ${car.name}`, level: 2 }] : []),
+    ...(selectedFaqs.length ? [
+      { id: 'car-service-faq', text: `الأسئلة الشائعة حول ${service.name} لسيارات ${car.name}`, level: 2 },
+      ...selectedFaqs.map((faq, index) => ({ id: `car-service-faq-${index + 1}`, text: faq.q, level: 3 })),
+    ] : []),
+    ...(otherCars.length ? [{ id: 'car-service-other-targets', text: `خدمة ${service.name} متوفرة أيضاً لماركات السيارات التالية`, level: 2 }] : []),
+    ...(otherServices.length ? [{ id: 'car-service-other-services', text: `خدمات أخرى متوفرة لسيارات ${car.name}`, level: 2 }] : []),
+  ];
 
   const breadcrumbItems = [
     { name: 'الرئيسية', url: '/' },
@@ -201,12 +214,13 @@ export default function CarServiceView({
         </div>
 
         <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">{pageTitle}</h1>
-        <div className="text-gray-600 text-lg leading-relaxed prose max-w-none" dangerouslySetInnerHTML={{ __html: fullHtmlContent }} />
+        {headings.length > 0 && <TableOfContents headings={headings} title={`محتوى ${service.name}`} />}
+        <div className="text-gray-600 text-lg leading-relaxed prose max-w-none prose-headings:scroll-mt-24" dangerouslySetInnerHTML={{ __html: contentWithIds }} />
       </div>
 
       {selectedTestimonials.length > 0 && (
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">آراء وتقييمات ملاك سيارات {car.name}</h2>
+          <h2 id="car-service-testimonials" className="scroll-mt-24 text-2xl font-bold text-gray-900">آراء وتقييمات ملاك سيارات {car.name}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {selectedTestimonials.map((t, index) => (
               <div key={index} className="p-5 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
@@ -223,11 +237,11 @@ export default function CarServiceView({
 
       {selectedFaqs.length > 0 && (
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">الأسئلة الشائعة حول {service.name} لسيارات {car.name}</h2>
+          <h2 id="car-service-faq" className="scroll-mt-24 text-2xl font-bold text-gray-900">الأسئلة الشائعة حول {service.name} لسيارات {car.name}</h2>
           <div className="space-y-4">
             {selectedFaqs.map((faq, index) => (
               <div key={index} className="border-b border-gray-100 pb-4 last:border-0">
-                <h3 className="font-bold text-lg text-blue-900 mb-2">{faq.q}</h3>
+                <h3 id={`car-service-faq-${index + 1}`} className="scroll-mt-24 font-bold text-lg text-blue-900 mb-2">{faq.q}</h3>
                 <p className="text-gray-600 leading-relaxed">{faq.a}</p>
               </div>
             ))}
@@ -238,7 +252,7 @@ export default function CarServiceView({
       <div className="space-y-8">
         {otherCars.length > 0 && (
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-            <h2 className="text-xl font-bold text-gray-900">خدمة {service.name} متوفرة أيضاً لماركات السيارات التالية</h2>
+            <h2 id="car-service-other-targets" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمة {service.name} متوفرة أيضاً لماركات السيارات التالية</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {otherCars.map((c) => (
                 <Link
@@ -255,7 +269,7 @@ export default function CarServiceView({
 
         {otherServices.length > 0 && (
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-            <h2 className="text-xl font-bold text-gray-900">خدمات أخرى متوفرة لسيارات {car.name}</h2>
+            <h2 id="car-service-other-services" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمات أخرى متوفرة لسيارات {car.name}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {otherServices.map((s) => (
                 <Link

@@ -11,9 +11,10 @@ interface Heading {
 
 interface TableOfContentsProps {
   headings: Heading[];
+  title?: string;
 }
 
-export default function TableOfContents({ headings }: TableOfContentsProps) {
+export default function TableOfContents({ headings, title = 'محتويات الدليل' }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string>('');
   // فتح تلقائي إذا كانت العناوين 5 أو أقل، وإغلاق تلقائي إذا كانت كثيرة
   const [isOpen, setIsOpen] = useState<boolean>(headings?.length <= 5);
@@ -56,7 +57,7 @@ export default function TableOfContents({ headings }: TableOfContentsProps) {
 
   return (
     <nav
-      aria-label="جدول محتويات المقال"
+      aria-label={title}
       className="my-8 rounded-2xl border border-blue-100 bg-blue-50/40 p-4 shadow-xs transition sm:p-5"
     >
       <button
@@ -66,7 +67,7 @@ export default function TableOfContents({ headings }: TableOfContentsProps) {
       >
         <span className="flex items-center gap-2 text-sm sm:text-base">
           <List className="h-4 w-4 text-blue-600" />
-          <span>محتويات الدليل ({headings.length} أقسام)</span>
+          <span>{title} ({headings.length} أقسام)</span>
         </span>
         <ChevronDown
           className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
