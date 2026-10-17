@@ -1,37 +1,11 @@
-import { db } from '@/lib/db';
+import { getSiteSettings } from '@/lib/settings';
 
 interface StickyFloatingBarProps {
   articleTitle?: string;
 }
 
 export default async function StickyFloatingBar({ articleTitle }: StickyFloatingBarProps) {
-  // جلب الأرقام مباشرة من قاعدة البيانات
-  let phoneNumber = '+96500000000';
-  let whatsappNumber = '96500000000';
-
-  try {
-    const settings = await db.setting.findMany({
-      where: {
-        key: { in: ['phone_number', 'whatsapp_number'] },
-      },
-    });
-
-    const map = settings.reduce((acc, curr) => {
-      acc[curr.key] = curr.value || '';
-      return acc;
-    }, {} as Record<string, string>);
-
-    if (map['phone_number']) {
-      phoneNumber = map['phone_number'];
-    }
-    if (map['whatsapp_number']) {
-      whatsappNumber = map['whatsapp_number'];
-    } else if (map['phone_number']) {
-      whatsappNumber = map['phone_number'].replace(/[^\d]/g, '');
-    }
-  } catch (error) {
-    console.error('Error fetching settings for StickyFloatingBar:', error);
-  }
+  const { phoneNumber, whatsappNumber } = await getSiteSettings();
 
   const cleanWhatsapp = whatsappNumber.replace(/[^\d]/g, '');
   const message = articleTitle
@@ -44,7 +18,7 @@ export default async function StickyFloatingBar({ articleTitle }: StickyFloating
   return (
     <aside
       aria-label="خيارات الاتصال السريع"
-      className="fixed bottom-0 inset-x-0 z-50 p-3 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] md:hidden"
+      className="fixed bottom-0 inset-x-0 z-50 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
     >
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
         {/* زر الاتصال المباشر */}

@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
 import CallToAction from '@/components/CallToAction';
-import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { getSiteUrl } from '@/lib/site-url';
 import { isAutomotiveSite } from '@/lib/site-profile';
@@ -285,8 +284,6 @@ export default async function HomePage() {
         </div>
       </main>
 
-      {/* شريط الاتصال والواتساب العائم في أسفل الشاشة */}
-      <StickyFloatingBar />
     </>
   );
 }

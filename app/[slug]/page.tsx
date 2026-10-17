@@ -14,7 +14,6 @@ import TableOfContents from '@/components/TableOfContents';
 import FaqSection from '@/components/FaqSection';
 import CallToAction from '@/components/CallToAction';
 import RelatedArticles from '@/components/RelatedArticles';
-import StickyFloatingBar from '@/components/StickyFloatingBar';
 import { isAdminAuthenticated } from '@/lib/auth/authorization';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 import { buildSiteUrl, getSiteUrl, trustedCanonicalUrl } from '@/lib/site-url';
@@ -318,7 +317,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             )}
           </div>
         </main>
-        <StickyFloatingBar />
       </>
     );
   }
@@ -390,7 +388,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             )}
           </div>
         </main>
-        <StickyFloatingBar />
       </>
     );
   }
@@ -584,7 +581,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             )}
           </article>
         </main>
-        <StickyFloatingBar />
       </>
     );
   }
@@ -634,7 +630,6 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             />
           </article>
         </main>
-        <StickyFloatingBar />
       </>
     );
   }
