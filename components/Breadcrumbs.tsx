@@ -26,8 +26,9 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         {filteredItems.map((item, index) => {
           const isLast = index === filteredItems.length - 1;
 
+          // URL-derived keys expose nonexistent URL-like strings in RSC payloads.
           return (
-            <li key={`${item.url}-${index}`} className="flex items-center gap-2">
+            <li key={`breadcrumb-${index}`} className="flex items-center gap-2">
               <span className="select-none text-gray-400">/</span>
               {isLast ? (
                 <span className="font-semibold text-gray-900" aria-current="page">
