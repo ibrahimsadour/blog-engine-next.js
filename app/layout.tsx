@@ -100,13 +100,13 @@ export default async function RootLayout({
           }}
         />
       )}
-      <body className="flex min-h-screen flex-col bg-gray-50 pb-[calc(5rem+env(safe-area-inset-bottom))] font-sans text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+      <body className="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900">
         <Toaster position="top-center" richColors dir="rtl" />
         <AdminBar />
         <Navbar />
         <div className="flex-1">{children}</div>
         <Footer />
-        <StickyFloatingBar />
+        <StickyFloatingBar phoneNumber={settings.phoneNumber} whatsappNumber={settings.whatsappNumber} />
       </body>
     </html>
   );
