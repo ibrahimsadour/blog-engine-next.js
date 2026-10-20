@@ -6,10 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const baseUrl = getSiteUrl();
-  const now = new Date().toISOString();
   const sitemap = (path: string) => `  <sitemap>
     <loc>${escapeXml(`${baseUrl}/${path}`)}</loc>
-    <lastmod>${now}</lastmod>
   </sitemap>`;
 
   const dynamicContent = isDynamicContentEnabled();
