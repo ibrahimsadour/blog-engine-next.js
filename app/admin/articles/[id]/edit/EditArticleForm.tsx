@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ArticleEditorLayout from '@/components/article/ArticleEditorLayout';
+import { resolveArticlePublicationIntent } from '@/lib/article-save-intent';
 import { getErrorMessage } from '@/lib/errors';
 import type { ArticleEditorData, ArticleFaq, CategorySummary } from '@/types/admin';
 
@@ -189,6 +190,9 @@ export default function EditArticleForm({
 
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const intent = submitter instanceof HTMLButtonElement && submitter.name === 'publicationIntent' ? submitter.value : undefined;
+    const publishOnSave = resolveArticlePublicationIntent(isPublished, intent);
 
     const cleanSlug = slug.trim().replace(/^-+|-+$/g, '');
     const finalCategorySlug = (formData.get('categorySlug') as string) || categorySlug;
@@ -230,7 +234,7 @@ export default function EditArticleForm({
     formData.set('canonicalUrl', canonicalUrl);
     formData.set('content', content);
     formData.set('faqs', JSON.stringify(validFaqs));
-    formData.set('isPublished', isPublished ? 'true' : 'false');
+    formData.set('isPublished', publishOnSave ? 'true' : 'false');
     formData.set('noIndex', noIndex ? 'true' : 'false');
     formData.set('noFollow', noFollow ? 'true' : 'false');
 
@@ -239,11 +243,12 @@ export default function EditArticleForm({
 
     try {
       await updateAction(formData);
+      setIsPublished(publishOnSave);
 
       localStorage.removeItem(storageKey);
       setIsDirty(false);
 
-      toast.success(isPublished ? 'تم حفظ وتحديث المقال بنجاح!' : 'تم حفظ التعديلات كمسودة بنجاح!', {
+      toast.success(publishOnSave ? 'تم حفظ وتحديث المقال بنجاح!' : 'تم حفظ التعديلات كمسودة بنجاح!', {
         id: toastId,
       });
 
@@ -262,6 +267,7 @@ export default function EditArticleForm({
       categories={categories}
       faqs={faqs}
       isEditMode={true}
+      isPublishedOnServer={article.isPublished ?? false}
       isSubmitting={isSubmitting}
       isSavedLocally={isSavedLocally}
       isDirty={isDirty}

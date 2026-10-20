@@ -7,8 +7,7 @@
 }
 .editor *, .editor *::before, .editor *::after { box-sizing: border-box; }
 .toolbar {
-  position: sticky;
-  top: 0;
+  position: static;
   z-index: 30;
   display: flex;
   flex-wrap: wrap;
@@ -44,7 +43,7 @@
 .primaryButton:hover { background: #135e96; border-color: #135e96; }
 .secondaryButton { color: var(--editor-blue); background: #f6f7f7; }
 .secondaryButton:hover { background: #edf4f9; }
-.editor button:disabled { opacity: .55; cursor: wait; }
+.editor button:disabled { opacity: .55; cursor: not-allowed; }
 .saveStatus { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; color: #646970; }
 .formFields { margin: 0; padding: 0; border: 0; min-width: 0; }
 .columns { display: grid; gap: 1.25rem; align-items: start; }
@@ -105,9 +104,33 @@ details.box[open] > summary > svg { transform: rotate(180deg); }
 .faqHeading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; font-weight: 600; }
 .dangerLink { color: #b32d2e; cursor: pointer; font-size: .75rem; text-decoration: underline; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-@media (min-width: 1280px) { .columns { grid-template-columns: minmax(0, 1fr) 280px; } }
+/* Explicit LTR grid tracks keep publishing physically on the left in the RTL editor. */
+@media (min-width: 1024px) {
+  .columns { direction: ltr; grid-template-columns: 280px minmax(0, 1fr); gap: 1.25rem; }
+  .mainColumn { direction: rtl; grid-column: 2; grid-row: 1; }
+  .sideColumn {
+    direction: rtl;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+    padding: 1px 2px 2px;
+  }
+  .sideColumn > * { flex-shrink: 0; }
+  .publishBox { position: sticky; top: 0; z-index: 5; background: #f0f0f1; }
+  .toolbarActions > a, .toolbarActions > button { display: none; }
+}
+@media (max-width: 1023px) {
+  .toolbar { position: sticky; top: 0; }
+}
 @media (max-width: 639px) {
-  .toolbar { position: static; }
+  .toolbar { position: sticky; top: 0; }
   .toolbarActions { width: 100%; }
   .saveStatus { width: 100%; }
   .boxBody { padding: .85rem; }
@@ -115,3 +138,20 @@ details.box[open] > summary > svg { transform: rotate(180deg); }
 }
 
 .seoPanel { display: flex; min-width: 0; flex-direction: column; gap: 1.25rem; }
+
+.publishActions { flex-direction: column; align-items: stretch; }
+.publishActions > :is(a, button) { width: 100%; }
+.seoPanel { container-type: inline-size; }
+.seoHeading { grid-area: heading; }
+.seoPreview { grid-area: preview; min-width: 0; align-self: start; }
+.seoFields { grid-area: fields; min-width: 0; display: grid; gap: 1rem; }
+.seoNote { grid-area: note; }
+.seoChecklist { grid-area: checklist; }
+.seoPanel { display: grid; grid-template-areas: 'heading' 'fields' 'preview' 'note' 'checklist'; gap: 1rem; }
+@media (min-width: 1440px) {
+  .seoPanel { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'heading heading' 'fields preview' 'note note' 'checklist checklist'; }
+}
+
+.publishBox .boxBody { padding: .75rem; gap: .65rem; }
+.publishBox .publishActions { margin-inline: -.75rem; padding: .75rem; gap: .5rem; }
+.publishBox .help { font-size: .67rem; line-height: 1.7; }

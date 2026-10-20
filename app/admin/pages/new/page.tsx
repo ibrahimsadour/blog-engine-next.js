@@ -1,3 +1,4 @@
+import { getSiteUrl } from '@/lib/site-url';
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
@@ -38,13 +39,8 @@ export default function NewAdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-gray-900">إنشاء صفحة جديدة</h1>
-        <p className="mt-1 text-xs text-gray-500">أدخل محتوى الصفحة وتفاصيل ظهورها وإعدادات الـ SEO</p>
-      </div>
-
-      <PageForm action={createPageAction} />
+    <div className="w-full min-w-0">
+      <PageForm siteUrl={getSiteUrl()} action={createPageAction} />
     </div>
   );
 }

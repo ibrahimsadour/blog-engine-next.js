@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import type { ChangeEventHandler, FormEventHandler, ReactNode } from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
 import { ArrowRight, CheckCircle2, ChevronDown, ExternalLink, Save, FileText, Link2, Search, ImageIcon, Settings2 } from 'lucide-react';
+import EditorBox from './EditorBox';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
 import DraftRecoveryBanner from '@/components/article/DraftRecoveryBanner';
@@ -39,6 +40,7 @@ interface ArticleEditorLayoutProps {
   categories: CategorySummary[];
   faqs: ArticleFaq[];
   isEditMode: boolean;
+  isPublishedOnServer: boolean;
   isSubmitting: boolean;
   isSavedLocally: boolean;
   isDirty: boolean;
@@ -54,25 +56,9 @@ interface ArticleEditorLayoutProps {
   onFaqChange: (index: number, field: 'question' | 'answer', value: string) => void;
 }
 
-function EditorBox({ title, icon, children, collapsible = true }: {
-  title: string; icon?: ReactNode; children: ReactNode; collapsible?: boolean;
-}) {
-  const heading = <span className={styles.boxHeading}>{icon}{title}</span>;
-  return collapsible ? (
-    <details className={styles.box} open>
-      <summary className={styles.boxHeader}>{heading}<ChevronDown size={16} aria-hidden="true" /></summary>
-      <div className={styles.boxBody}>{children}</div>
-    </details>
-  ) : (
-    <section className={styles.box}>
-      <div className={styles.boxHeader}><h2>{heading}</h2></div>
-      <div className={styles.boxBody}>{children}</div>
-    </section>
-  );
-}
 
 export default function ArticleEditorLayout({
-  values: v, onChange: change, categories, faqs, isEditMode, isSubmitting,
+  values: v, onChange: change, categories, faqs, isEditMode, isPublishedOnServer, isSubmitting,
   isSavedLocally, isDirty, hasDraft, previewSlug, siteUrl, onSubmit, onSlugChange,
   onRestoreDraft, onDiscardDraft, onAddFaq, onRemoveFaq, onFaqChange,
 }: ArticleEditorLayoutProps) {
@@ -186,7 +172,8 @@ export default function ArticleEditorLayout({
           </div>
 
           <aside className={styles.sideColumn} aria-label="إعدادات المقال">
-            <EditorBox title="نشر" collapsible={false}>
+            <div className={styles.publishBox}>
+            <EditorBox title="نشر المقالة" collapsible={false}>
               <div className={styles.publishStatus}><span className={v.isPublished ? styles.liveDot : styles.draftDot} />{v.isPublished ? 'سيكون المقال منشورًا' : 'سيُحفظ كمسودة'}</div>
               <div className={styles.field}>
                 <label htmlFor="article-status">حالة المقال</label>
@@ -195,13 +182,31 @@ export default function ArticleEditorLayout({
                   <option value="draft">مسودة — غير ظاهر للزوار</option>
                 </select>
               </div>
-              <p className={styles.help}>تُطبّق الحالة عند الضغط على زر الحفظ.</p>
               {(v.noIndex || v.noFollow) && <p className={styles.warning}>راجع إعدادات الفهرسة المفعّلة قبل النشر.</p>}
               <div className={styles.publishActions}>
-                {previewSlug && <a href={`/${previewSlug}`} target="_blank" rel="noopener noreferrer" className={styles.textLink}>معاينة النسخة المحفوظة ↗</a>}
-                <button type="submit" disabled={isSubmitting} className={styles.primaryButton}>{saveText}</button>
+                {previewSlug ? (
+                  <a href={`/${previewSlug}`} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>
+                    <ExternalLink size={14} aria-hidden="true" />معاينة المقالة
+                  </a>
+                ) : (
+                  <button type="button" disabled className={styles.secondaryButton} title="احفظ المسودة أولًا لإتاحة المعاينة">معاينة المقالة</button>
+                )}
+                <button type="submit" name="publicationIntent" value={v.isPublished ? 'publish' : 'draft'} disabled={isSubmitting} className={styles.primaryButton}>{saveText}</button>
+                {!isPublishedOnServer && (
+                  <button type="submit" name="publicationIntent" value="draft" disabled={isSubmitting} className={styles.secondaryButton}>حفظ المسودة</button>
+                )}
               </div>
-              <p className={styles.help}>الحفظ التلقائي المحلي لا ينشر المقال على الموقع.</p>
+              {!previewSlug && <p className={styles.help}>احفظ المسودة أولًا ثم افتحها لإتاحة المعاينة.</p>}
+            </EditorBox>
+            </div>
+
+            <EditorBox title="الصورة البارزة" icon={<ImageIcon size={16} aria-hidden="true" />}>
+              <ImageUploader name="featuredImage" value={v.featuredImage} onChange={change.featuredImage} compact />
+              <div className={styles.field}>
+                <label htmlFor="article-image-alt">النص البديل للصورة</label>
+                <input id="article-image-alt" name="altText" value={v.altText} onChange={(e) => change.altText(e.target.value)} placeholder="وصف مختصر لما يظهر في الصورة" />
+                <p className={styles.help}>يساعد على فهم الصورة عند تعذر عرضها.</p>
+              </div>
             </EditorBox>
 
             <EditorBox title="التصنيف" collapsible={false}>
@@ -212,15 +217,6 @@ export default function ArticleEditorLayout({
                 </select>
               </div>
               <Link href="/admin/categories" target="_blank" rel="noopener noreferrer" className={styles.textLink}>+ إدارة التصنيفات ↗</Link>
-            </EditorBox>
-
-            <EditorBox title="الصورة البارزة" icon={<ImageIcon size={16} aria-hidden="true" />}>
-              <ImageUploader name="featuredImage" value={v.featuredImage} onChange={change.featuredImage} compact />
-              <div className={styles.field}>
-                <label htmlFor="article-image-alt">النص البديل للصورة</label>
-                <input id="article-image-alt" name="altText" value={v.altText} onChange={(e) => change.altText(e.target.value)} placeholder="وصف مختصر لما يظهر في الصورة" />
-                <p className={styles.help}>يساعد على فهم الصورة عند تعذر عرضها.</p>
-              </div>
             </EditorBox>
 
             <EditorBox title="المنطقة المستهدفة">

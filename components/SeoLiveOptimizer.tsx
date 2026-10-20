@@ -83,7 +83,7 @@ export default function SeoLiveOptimizer({
 
   return (
     <div className={classic ? styles.seoPanel : "space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs"}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
+      <div className={classic ? `${styles.seoHeading} flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3` : "flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3"}>
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-600">
             SEO
@@ -115,7 +115,7 @@ export default function SeoLiveOptimizer({
       </div>
 
       {/* نافذة محاكاة نتيجة بحث Google (SERP Preview) */}
-      <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+      <div className={classic ? `${styles.seoPreview} rounded border border-gray-200 bg-gray-50/50 p-4` : "rounded-xl border border-gray-200 bg-gray-50/50 p-4"}>
         <span className="mb-2 block text-[11px] font-bold text-gray-400">معاينة النتيجة في Google:</span>
 
         <div
@@ -148,10 +148,10 @@ export default function SeoLiveOptimizer({
         </div>
       </div>
 
-      <p className="text-xs leading-6 text-gray-500">معاينة تقريبية؛ قد تعرض محركات البحث عنوانًا أو وصفًا مختلفًا. مؤشرات الطول والكلمات إرشادية ولا تضمن الترتيب.</p>
+      <p className={classic ? `${styles.seoNote} text-xs leading-6 text-gray-500` : "text-xs leading-6 text-gray-500"}>معاينة تقريبية؛ قد تعرض محركات البحث عنوانًا أو وصفًا مختلفًا. مؤشرات الطول والكلمات إرشادية ولا تضمن الترتيب.</p>
 
       {/* حقول Meta Title & Description مع العدادات الذكية */}
-      <div className={classic ? "grid gap-5" : "grid gap-4 sm:grid-cols-2"}>
+      <div className={classic ? styles.seoFields : "grid gap-4 sm:grid-cols-2"}>
         <div>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs">
             <label htmlFor="seo-meta-title" className="font-bold text-gray-700">Meta Title (عنوان محرك البحث)</label>
@@ -178,7 +178,7 @@ export default function SeoLiveOptimizer({
         </div>
 
         <div>
-          <div className="mb-1 flex items-center justify-between text-xs">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs">
             <label htmlFor="seo-meta-description" className="font-bold text-gray-700">Meta Description (الوصف في محرك البحث)</label>
             <span className={`font-mono font-bold ${descStatus.color}`}>
               {descLen}/160 ({descStatus.text})
@@ -204,7 +204,7 @@ export default function SeoLiveOptimizer({
       </div>
 
       {/* قائمة التدقيق الحية للكلمة المفتاحية (Keyword Checklist) */}
-      <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+      <div className={classic ? `${styles.seoChecklist} rounded border border-gray-100 bg-gray-50/60 p-4` : "rounded-xl border border-gray-100 bg-gray-50/60 p-4"}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold text-gray-800">
             تدقيق الكلمة المفتاحية: {targetKeyword ? <span className="text-blue-600 font-black">&quot;{targetKeyword}&quot;</span> : <span className="text-gray-400">(لم تحدد كلمة بعد)</span>}

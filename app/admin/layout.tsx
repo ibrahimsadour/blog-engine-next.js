@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import styles from '@/components/admin/AdminSidebar.module.css';
+import { FileText, Files, Folder, MapPin, Car, Wrench, PanelsTopLeft, Settings, ArrowLeftRight, Plus, ExternalLink, LogOut } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
@@ -29,7 +31,7 @@ export default async function AdminLayout({
       <div className="flex flex-col lg:flex-row">
         {/* الشريط الجانبي (Sidebar) المخصص للوحة الإدارة */}
         <AdminSidebar>
-        <aside className="max-h-[70dvh] w-full overflow-y-auto flex flex-col justify-between gap-6 border-l border-gray-200 bg-white p-5 shadow-xs lg:sticky lg:top-0 lg:h-screen lg:max-h-none lg:w-64">
+        <aside className={styles.sidebar}>
           <div>
             {/* عنوان اللوحة والشعار */}
             <div className="mb-8 flex items-center justify-between border-b border-gray-100 pb-4">
@@ -48,7 +50,7 @@ export default async function AdminLayout({
                 href="/admin"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
-                <span>📄</span>
+                <FileText size={17} aria-hidden="true" className="shrink-0" />
                 <span>إدارة المقالات</span>
               </Link>
 
@@ -56,7 +58,7 @@ export default async function AdminLayout({
                 href="/admin/pages"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
-                <span>📑</span>
+                <Files size={17} aria-hidden="true" className="shrink-0" />
                 <span>إدارة الصفحات</span>
               </Link>
 
@@ -64,7 +66,7 @@ export default async function AdminLayout({
                 href="/admin/categories"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
-                <span>📁</span>
+                <Folder size={17} aria-hidden="true" className="shrink-0" />
                 <span>التصنيفات</span>
               </Link>
 
@@ -74,7 +76,7 @@ export default async function AdminLayout({
                   href="/admin/cities"
                   className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                 >
-                  <span>📁</span>
+                  <MapPin size={17} aria-hidden="true" className="shrink-0" />
                   <span>المدن</span>
                 </Link>
   
@@ -84,7 +86,7 @@ export default async function AdminLayout({
                       href="/admin/cars"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
-                      <span>📁</span>
+                      <Folder size={17} aria-hidden="true" className="shrink-0" />
                       <span>السيارات</span>
                     </Link>
   
@@ -92,7 +94,7 @@ export default async function AdminLayout({
                       href="/admin/car-service-templates"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
-                      <span>🚘</span>
+                      <Car size={17} aria-hidden="true" className="shrink-0" />
                       <span>قوالب الخدمات والسيارات</span>
                     </Link>
                   </>
@@ -102,7 +104,7 @@ export default async function AdminLayout({
                   href="/admin/services"
                   className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                 >
-                  <span>📁</span>
+                  <Wrench size={17} aria-hidden="true" className="shrink-0" />
                   <span>الخدمات</span>
                 </Link>
   
@@ -110,7 +112,7 @@ export default async function AdminLayout({
                   href="/admin/service-templates"
                   className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                 >
-                  <span>📐</span>
+                  <PanelsTopLeft size={17} aria-hidden="true" className="shrink-0" />
                   <span>قوالب الخدمات والمدن</span>
                 </Link>
   
@@ -121,7 +123,7 @@ export default async function AdminLayout({
                 href="/admin/settings"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
-                <span>⚙️</span>
+                <Settings size={17} aria-hidden="true" className="shrink-0" />
                 <span>إعدادات الـ Head و SEO</span>
               </Link>
 
@@ -129,7 +131,7 @@ export default async function AdminLayout({
                 href="/admin/redirects"
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               >
-                <span>🔀</span>
+                <ArrowLeftRight size={17} aria-hidden="true" className="shrink-0" />
                 <span>إدارة التحويلات (Redirects)</span>
               </Link>
             </nav>
@@ -145,7 +147,7 @@ export default async function AdminLayout({
                 href="/admin/articles/new"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-98"
               >
-                <span>+</span>
+                <Plus size={16} aria-hidden="true" />
                 <span>إنشاء مقال جديد</span>
               </Link>
 
@@ -155,7 +157,7 @@ export default async function AdminLayout({
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-100"
               >
                 <span>معاينة الموقع</span>
-                <span className="text-xs">↗</span>
+                <ExternalLink size={14} aria-hidden="true" />
               </Link>
             </div>
           </div>
@@ -167,7 +169,7 @@ export default async function AdminLayout({
                 type="submit"
                 className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 transition hover:bg-red-100 active:scale-98"
               >
-                <span>🚪</span>
+                <LogOut size={17} aria-hidden="true" className="shrink-0" />
                 <span>تسجيل الخروج</span>
               </button>
             </form>
@@ -176,8 +178,8 @@ export default async function AdminLayout({
         </AdminSidebar>
 
         {/* مساحة عرض الصفحات الداخلية */}
-        <main className="min-w-0 flex-1 bg-[#f0f0f1] p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">{children}</div>
+        <main className="min-w-0 flex-1 bg-[#f0f0f1] p-4 sm:p-5">
+          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>
       </div>
     </div>

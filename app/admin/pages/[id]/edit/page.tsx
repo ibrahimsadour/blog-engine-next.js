@@ -1,3 +1,4 @@
+import { getSiteUrl } from '@/lib/site-url';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
@@ -57,13 +58,8 @@ export default async function EditAdminPage({ params }: EditPageAdminProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-gray-900">تعديل الصفحة: {page.title}</h1>
-        <p className="mt-1 text-xs text-gray-500">تعديل المحتوى، الرابط الدائم، وإعدادات الظهور والـ SEO</p>
-      </div>
-
-      <PageForm initialData={page} action={updatePageAction} />
+    <div className="w-full min-w-0">
+      <PageForm siteUrl={getSiteUrl()} initialData={page} action={updatePageAction} />
     </div>
   );
 }
