@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
 import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { buildSiteUrl, latestDate, sitemapUrlEntry } from '@/lib/site-url';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { pageCount, sitemapPage, sitemapSlice } from '@/lib/sitemap-pagination';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!isDynamicContentEnabled()) return new NextResponse('Not Found', { status: 404 });
   const [cities, services, template] = await Promise.all([
     db.city.findMany({
@@ -16,6 +17,9 @@ export async function GET() {
     db.globalServiceTemplate.findFirst({ select: { updatedAt: true } }),
   ]);
 
+  const page = sitemapPage(request.nextUrl.searchParams.get('page'));
+  if (page === null || page > pageCount(cities.length * services.length)) return new NextResponse('Not Found', { status: 404 });
+
   const entries = cities.flatMap((city) => services.map((service) => {
     const custom = city.cityServices.find((item) => item.serviceId === service.id);
     return sitemapUrlEntry(
@@ -25,7 +29,7 @@ export async function GET() {
     );
   }));
 
-  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, {
+  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemapSlice(entries, page).join('')}</urlset>`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
   });
 }
