@@ -32,7 +32,7 @@ export default async function SeoAuditPage() {
     else titles.set(title, url);
     if (!entry.metaDesc?.trim()) add('medium', url, 'وصف Meta غير مخصص');
     if (entry.noIndex) add('medium', url, 'صفحة منشورة مع noindex — راجع القرار');
-    if (entry.type === 'article' && 'featuredImage' in entry) {
+    if ('featuredImage' in entry && 'altText' in entry && 'content' in entry && 'targetKeyword' in entry) {
       if (!entry.featuredImage) add('medium', url, 'لا توجد صورة رئيسية');
       if (entry.featuredImage && !entry.altText?.trim()) add('medium', url, 'الصورة الرئيسية دون Alt مخصص');
       if (!entry.content?.trim()) add('high', url, 'محتوى فارغ');
