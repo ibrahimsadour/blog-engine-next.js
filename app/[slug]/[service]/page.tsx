@@ -22,7 +22,7 @@ const getServiceRouteData = cache(async (slug: string, serviceSlug: string) => {
     db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
   ]);
   if ((!city && !car) || !service) return { city, car, service, customContent: null, template: null };
-  const [customContent, template] = car
+  const [customContent, template] = car && !city
     ? await Promise.all([
         db.carServiceContent.findUnique({ where: { carId_serviceId: { carId: car.id, serviceId: service.id } } }),
         db.globalCarServiceTemplate.findFirst(),
@@ -109,7 +109,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if ((!city && !car) || !service) return {};
 
-  const isCar = Boolean(car);
+  const isCar = Boolean(car && !city);
   const targetName = isCar ? car!.name : city!.name;
   const { phone, siteName } = await getSiteConfig();
   const canonicalUrl = buildSiteUrl(slug, serviceSlug);
