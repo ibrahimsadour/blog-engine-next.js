@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { isDynamicContentEnabled } from '@/lib/site-profile';
 import { buildSiteUrl, latestDate, sitemapUrlEntry } from '@/lib/site-url';
 import { NextRequest, NextResponse } from 'next/server';
-import { pageCount, sitemapPage, sitemapSlice } from '@/lib/sitemap-pagination';
+import { pageCount, sitemapPage, SITEMAP_PAGE_SIZE } from '@/lib/sitemap-pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,16 +20,22 @@ export async function GET(request: NextRequest) {
   const page = sitemapPage(request.nextUrl.searchParams.get('page'));
   if (page === null || page > pageCount(cities.length * services.length)) return new NextResponse('Not Found', { status: 404 });
 
-  const entries = cities.flatMap((city) => services.map((service) => {
-    const custom = city.cityServices.find((item) => item.serviceId === service.id);
-    return sitemapUrlEntry(
+  const entries: string[] = [];
+  const total = cities.length * services.length;
+  const start = (page - 1) * SITEMAP_PAGE_SIZE;
+  const end = Math.min(start + SITEMAP_PAGE_SIZE, total);
+  for (let index = start; index < end; index++) {
+    const city = cities[Math.floor(index / services.length)];
+    const service = services[index % services.length];
+    const custom = city.cityServices.find(item => item.serviceId === service.id);
+    entries.push(sitemapUrlEntry(
       buildSiteUrl(city.slug, service.slug),
       latestDate(city.updatedAt, service.updatedAt, template?.updatedAt, custom?.updatedAt),
       '0.8',
-    );
-  }));
+    ));
+  }
 
-  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemapSlice(entries, page).join('')}</urlset>`, {
+  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
   });
 }
