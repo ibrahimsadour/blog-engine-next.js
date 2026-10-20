@@ -84,6 +84,7 @@ export function generateFaqSchema(faqs: FaqItem[]) {
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
   const baseUrl = getSiteUrl();
 
+  const uniqueItems = items.filter((item) => item.url !== '/' && item.name.trim() !== 'الرئيسية');
   const itemListElement = [
     {
       '@type': 'ListItem',
@@ -91,7 +92,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
       name: 'الرئيسية',
       item: baseUrl,
     },
-    ...items.map((item, index) => {
+    ...uniqueItems.map((item, index) => {
       const targetUrl = trustedCanonicalUrl(item.url, '/');
 
       return {

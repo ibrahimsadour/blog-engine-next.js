@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import styles from '@/components/admin/AdminSidebar.module.css';
-import { FileText, Files, Folder, MapPin, Car, Wrench, PanelsTopLeft, Settings, ArrowLeftRight, Plus, ExternalLink, LogOut } from 'lucide-react';
+import { FileText, Files, Folder, MapPin, Car, Wrench, PanelsTopLeft, Settings, ArrowLeftRight, SearchCheck, Plus, ExternalLink, LogOut } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
@@ -118,6 +118,11 @@ export default async function AdminLayout({
   
                   </>
               )}
+
+              <Link href="/admin/seo-audit" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700">
+                <SearchCheck size={17} aria-hidden="true" className="shrink-0" />
+                <span>SEO Audit Center</span>
+              </Link>
 
               <Link
                 href="/admin/settings"
