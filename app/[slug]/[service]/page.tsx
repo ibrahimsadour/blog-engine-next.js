@@ -190,12 +190,12 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
     const [otherCities, otherServices] = await Promise.all([
       db.city.findMany({
         where: { slug: { not: city.slug }, isActive: true },
-        take: 8,
+        take: 24,
         orderBy: { sortOrder: 'asc' },
       }),
       db.service.findMany({
         where: { slug: { not: service.slug }, isActive: true },
-        take: 8,
+        take: 24,
         orderBy: { sortOrder: 'asc' },
       }),
     ]);
