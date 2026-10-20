@@ -327,7 +327,7 @@ export default function SettingsForm({
             <ImageUploader initialImage={initialSettings['site_icon'] || ''} name="siteIcon" />
           </div>
           <p className="mt-1.5 text-[11px] text-gray-400">
-            يمكنك تغيير الأيقونة أو حذفها في أي وقت ويفضل مقاس 512×512 بصيغة PNG أو WebP أو JPG ويتم تحديث رابطها تلقائيا لتجاوز كاش المتصفح
+            ارفع أيقونة بمقاس 512×512 بصيغة PNG أو WebP أو JPG ثم اضغط حفظ بيانات الهوية والاتصال لتطبيقها دون إعادة بناء الموقع وعند حذفها تعود الأيقونة الافتراضية
           </p>
         </div>
 
