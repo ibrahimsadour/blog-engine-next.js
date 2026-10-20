@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
   const [cars, services, template] = await Promise.all([
     db.car.findMany({
       where: { isActive: true },
+      orderBy: { id: 'asc' },
       select: { slug: true, updatedAt: true, carServices: { select: { serviceId: true, updatedAt: true } } },
     }),
-    db.service.findMany({ where: { isActive: true }, select: { id: true, slug: true, updatedAt: true } }),
+    db.service.findMany({ where: { isActive: true }, orderBy: { id: 'asc' }, select: { id: true, slug: true, updatedAt: true } }),
     db.globalCarServiceTemplate.findFirst({ select: { updatedAt: true } }),
   ]);
 
