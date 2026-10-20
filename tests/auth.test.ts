@@ -9,7 +9,10 @@ test('creates signed admin sessions and rejects tampering', async () => {
   process.env.SESSION_SECRET = 'test-secret-with-at-least-thirty-two-characters';
   const token = await createAdminSessionToken();
   assert.equal(await verifyAdminSessionToken(token), true);
-  assert.equal(await verifyAdminSessionToken(`${token.slice(0, -1)}x`), false);
+  const signatureStart = token.indexOf('.') + 1;
+  const changedCharacter = token[signatureStart] === 'A' ? 'B' : 'A';
+  const tamperedToken = `${token.slice(0, signatureStart)}${changedCharacter}${token.slice(signatureStart + 1)}`;
+  assert.equal(await verifyAdminSessionToken(tamperedToken), false);
   assert.equal(await verifyAdminSessionToken('invalid'), false);
 });
 
