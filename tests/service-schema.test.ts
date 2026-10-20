@@ -19,3 +19,12 @@ test('shared graph identifies the service and page separately', () => {
   assert.match(source, /areaServed/);
   assert.doesNotMatch(source, /AutoRepair/);
 });
+
+test('dynamic SEO audit checks slug conflicts without changing publication', () => {
+  const source = readFileSync('app/admin/seo-audit/page.tsx', 'utf8');
+  assert.match(source, /تضارب مسار مدينة وسيارة/);
+  assert.match(source, /تركيبات المدن والخدمات/);
+  assert.match(source, /isDynamicContentEnabled/);
+  assert.match(source, /isAutomotiveSite/);
+  assert.doesNotMatch(source, /updateMany\(/);
+});
