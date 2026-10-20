@@ -18,7 +18,7 @@ interface PageProps {
 
 const PAGE_SIZE = 12;
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug).trim().toLowerCase();
 
@@ -34,7 +34,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const url = buildSiteUrl('category', category.slug);
+  const requestedPage = Number((await searchParams)?.page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
+  const url = `${buildSiteUrl('category', category.slug)}${page > 1 ? `?page=${page}` : ''}`;
   const title = category.metaTitle || `${category.name} | دليل الخدمات`;
   const description =
     category.metaDesc ||
