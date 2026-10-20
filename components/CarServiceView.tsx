@@ -4,6 +4,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import TableOfContents from '@/components/TableOfContents';
 import { prepareDynamicContent, type ContentHeading } from '@/lib/dynamic-table-of-contents';
 import { generateBreadcrumbSchema } from '@/lib/schema';
+import { generateServicePageSchema } from '@/lib/service-page-schema';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 interface CarServiceViewProps {
@@ -173,16 +174,16 @@ export default function CarServiceView({
     })),
   } : null;
 
-  const serviceSchema = {
-    "@context": "https://schema.org",
-    "@type": "AutoRepair",
-    "name": `${service.name} سيارات ${car.name}`,
-    "provider": {
-      "@type": "AutoRepair",
-      "name": siteName || "أوتو كراج",
-      ...(phone ? { "telephone": phone } : {}),
-    },
-  };
+  const serviceSchema = generateServicePageSchema({
+    name: `${service.name} لسيارات ${car.name}`,
+    serviceName: service.name,
+    subjectName: car.name,
+    subjectSlug: car.slug,
+    serviceSlug: service.slug,
+    siteName,
+    phone,
+    kind: 'car',
+  });
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">

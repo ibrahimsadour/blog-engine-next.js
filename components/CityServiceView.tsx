@@ -4,6 +4,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import TableOfContents from '@/components/TableOfContents';
 import { prepareDynamicContent, type ContentHeading } from '@/lib/dynamic-table-of-contents';
 import { generateBreadcrumbSchema } from '@/lib/schema';
+import { generateServicePageSchema } from '@/lib/service-page-schema';
 import { sanitizeContentHtml, serializeJsonLd } from '@/lib/security/content';
 
 interface CityServiceViewProps {
@@ -173,17 +174,16 @@ export default function CityServiceView({
     })),
   } : null;
 
-  const serviceSchema = {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": `${service.name} في ${city.name}`,
-    "provider": {
-      "@type": "LocalBusiness",
-      "name": siteName || "أوتو كراج",
-      ...(phone ? { "telephone": phone } : {}),
-    },
-    "areaServed": { "@type": "AdministrativeArea", "name": city.name },
-  };
+  const serviceSchema = generateServicePageSchema({
+    name: `${service.name} في ${city.name}`,
+    serviceName: service.name,
+    subjectName: city.name,
+    subjectSlug: city.slug,
+    serviceSlug: service.slug,
+    siteName,
+    phone,
+    kind: 'city',
+  });
 
   return (
     <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
