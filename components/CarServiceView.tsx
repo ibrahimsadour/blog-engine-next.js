@@ -255,7 +255,7 @@ export default function CarServiceView({
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="car-service-other-targets" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمة {service.name} متوفرة أيضاً لماركات السيارات التالية</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {otherCars.map((c) => (
+              {getStableMultiple(otherCars, `links-target-${seed}`, 8).map((c) => (
                 <Link
                   key={c.id}
                   href={`/${c.slug}/${service.slug}`}
@@ -272,7 +272,7 @@ export default function CarServiceView({
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="car-service-other-services" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمات أخرى متوفرة لسيارات {car.name}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {otherServices.map((s) => (
+              {getStableMultiple(otherServices, `links-service-${seed}`, 8).map((s) => (
                 <Link
                   key={s.id}
                   href={`/${car.slug}/${s.slug}`}
