@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '../components/Navbar';
+import PublicOnly from '@/components/PublicOnly';
 import Footer from '../components/Footer';
 import AdminBar from '@/components/AdminBar';
 import { Toaster } from 'sonner';
@@ -8,7 +9,7 @@ import { sanitizeCustomHeadCode } from '@/lib/security/content';
 import { getSiteUrl } from '@/lib/site-url';
 import { getSiteSettings } from '@/lib/settings';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
-import PublicOnly from '@/components/PublicOnly';
+
 export const revalidate = 300;
 
 export const viewport: Viewport = {
@@ -103,11 +104,9 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900">
         <Toaster position="top-center" richColors dir="rtl" />
         <AdminBar />
-        <PublicOnly>
-          <Navbar />
-        </PublicOnly>
+        <PublicOnly><Navbar /></PublicOnly>
         <div className="flex-1">{children}</div>
-        <Footer />
+        <PublicOnly><Footer /></PublicOnly>
         <StickyFloatingBar phoneNumber={settings.phoneNumber} whatsappNumber={settings.whatsappNumber} />
       </body>
     </html>
