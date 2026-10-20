@@ -97,7 +97,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     },
   });
 
-  if (!category) {
+  if (!category || (page > 1 && (category._count.articles <= (page - 1) * PAGE_SIZE))) {
     notFound();
   }
 
@@ -112,7 +112,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     '@type': 'CollectionPage',
     name: category.name,
     description: category.description || `أرشيف خدمات ومقالات قسم ${category.name}`,
-    url: pageUrl,
+    url: `${pageUrl}${page > 1 ? `?page=${page}` : ''}`,
     inLanguage: 'ar',
     mainEntity: {
       '@type': 'ItemList',
