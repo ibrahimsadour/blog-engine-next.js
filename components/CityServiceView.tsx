@@ -186,7 +186,7 @@ export default function CityServiceView({
   };
 
   return (
-    <main className="public-surface mx-auto max-w-5xl space-y-8 px-4 py-8 sm:py-12 md:px-8" dir="rtl">
+    <main className="container mx-auto px-4 py-12 space-y-8" dir="rtl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
@@ -196,9 +196,9 @@ export default function CityServiceView({
       )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceSchema) }} />
 
-      <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
         {selectedImage && (
-          <div className="relative w-full aspect-video mb-4 overflow-hidden rounded-2xl border border-slate-200">
+          <div className="relative w-full h-[320px] md:h-[420px] mb-4 overflow-hidden rounded-xl border border-gray-200">
             <Image
               src={selectedImage}
               alt={`${service.name} في ${city.name}`}
@@ -214,13 +214,13 @@ export default function CityServiceView({
           <Breadcrumbs items={breadcrumbItems} />
         </div>
 
-        <h1 className="text-2xl leading-relaxed sm:text-3xl lg:text-4xl lg:leading-relaxed font-extrabold text-gray-900">{pageTitle}</h1>
+        <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900">{pageTitle}</h1>
         {headings.length > 0 && <TableOfContents headings={headings} title={`محتوى ${service.name}`} />}
-        <div className="public-prose text-gray-600 text-lg leading-relaxed prose max-w-none prose-headings:scroll-mt-24" dangerouslySetInnerHTML={{ __html: contentWithIds }} />
+        <div className="text-gray-600 text-lg leading-relaxed prose max-w-none prose-headings:scroll-mt-24" dangerouslySetInnerHTML={{ __html: contentWithIds }} />
       </div>
 
       {selectedTestimonials.length > 0 && (
-        <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
           <h2 id="city-service-testimonials" className="scroll-mt-24 text-2xl font-bold text-gray-900">آراء وتقييمات العملاء في {city.name}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {selectedTestimonials.map((t, index) => (
@@ -237,7 +237,7 @@ export default function CityServiceView({
       )}
 
       {selectedFaqs.length > 0 && (
-        <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
           <h2 id="city-service-faq" className="scroll-mt-24 text-2xl font-bold text-gray-900">الأسئلة الشائعة حول {service.name} في {city.name}</h2>
           <div className="space-y-4">
             {selectedFaqs.map((faq, index) => (
@@ -252,7 +252,7 @@ export default function CityServiceView({
 
       <div className="space-y-8">
         {otherCities.length > 0 && (
-          <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="city-service-other-targets" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمة {service.name} متوفرة أيضاً في المدن والمناطق التالية</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {otherCities.map((c) => (
@@ -269,7 +269,7 @@ export default function CityServiceView({
         )}
 
         {otherServices.length > 0 && (
-          <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="city-service-other-services" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمات أخرى متوفرة في {city.name}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {otherServices.map((s) => (

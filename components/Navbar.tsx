@@ -26,9 +26,9 @@ export default async function Navbar() {
   ];
 
   return (
-    <header className="public-surface sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-[0_2px_12px_rgba(15,23,42,0.03)] backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1 md:px-8">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3 rounded-lg">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           {siteLogo ? (
             <div
               className="relative shrink-0"
@@ -54,9 +54,9 @@ export default async function Navbar() {
           )}
         </Link>
 
-        <nav aria-label="التنقل الرئيسي" className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-600 lg:gap-4">
-          <div className="hidden flex-wrap items-center justify-end gap-x-4 gap-y-1 lg:flex">
-            <Link href="/" className="rounded-lg py-2 text-xs leading-relaxed transition hover:text-blue-700 xl:text-sm">
+        <nav aria-label="التنقل الرئيسي" className="flex shrink-0 items-center gap-2 text-sm font-semibold text-gray-700 lg:gap-6">
+          <div className="hidden items-center gap-6 lg:flex">
+            <Link href="/" className="transition hover:text-blue-600">
               الرئيسية
             </Link>
 
@@ -65,7 +65,7 @@ export default async function Navbar() {
               <Link
                 key={c.id}
                 href={`/category/${c.slug}`}
-                className="rounded-lg py-2 text-xs leading-relaxed transition hover:text-blue-700 xl:text-sm"
+                className="transition hover:text-blue-600"
               >
                 {c.name}
               </Link>
@@ -76,7 +76,7 @@ export default async function Navbar() {
               <Link
                 key={page.id}
                 href={`/${page.slug}`}
-                className="rounded-lg py-2 text-xs leading-relaxed transition hover:text-blue-700 xl:text-sm"
+                className="transition hover:text-blue-600"
               >
                 {page.title}
               </Link>
@@ -86,7 +86,7 @@ export default async function Navbar() {
 
           <a
             href={`tel:${phoneNumber}`}
-            className="inline-flex min-h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 lg:px-4"
+            className="whitespace-nowrap rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700 active:scale-95 lg:px-4"
           >
             اتصال فوري
           </a>

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen } from 'lucide-react';
 
 interface ArticleItem {
   id: string;
@@ -34,10 +33,10 @@ export default function RelatedArticles({ articles }: RelatedArticlesProps) {
         {articles.map((art) => (
           <article
             key={art.id}
-            className="public-card group flex flex-col overflow-hidden"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs transition hover:-translate-y-1 hover:shadow-md"
           >
-            <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-              {art.featuredImage ? (
+            {art.featuredImage && (
+              <div className="relative h-44 w-full overflow-hidden bg-gray-100">
                 <Image
                   src={art.featuredImage}
                   alt={art.altText || art.title}
@@ -45,31 +44,27 @@ export default function RelatedArticles({ articles }: RelatedArticlesProps) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover transition duration-300 group-hover:scale-105"
                 />
-              ) : (
-                <span className="flex h-full items-center justify-center bg-blue-50 text-blue-300">
-                  <BookOpen size={36} strokeWidth={1.25} aria-hidden="true" />
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="flex flex-1 flex-col p-5">
+            <div className="flex flex-1 flex-col p-4">
               {art.category && (
                 <span className="mb-2 w-fit rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700">
                   {art.category.name}
                 </span>
               )}
 
-              <h4 className="line-clamp-2 text-base leading-7 font-bold text-gray-900 group-hover:text-blue-600">
+              <h4 className="line-clamp-2 text-sm font-bold text-gray-900 group-hover:text-blue-600">
                 <Link href={`/${art.slug}`}>{art.title}</Link>
               </h4>
 
               {art.excerpt && (
-                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-7 text-gray-500">
+                <p className="mt-2 line-clamp-2 flex-1 text-xs leading-relaxed text-gray-500">
                   {art.excerpt}
                 </p>
               )}
 
-              <div className="mt-auto border-t border-gray-50 pt-4 text-xs text-gray-400">
+              <div className="mt-4 border-t border-gray-50 pt-2 text-[11px] text-gray-400">
                 {new Date(art.createdAt).toLocaleDateString('ar-EG', {
                   year: 'numeric',
                   month: 'short',

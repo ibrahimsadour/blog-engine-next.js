@@ -279,7 +279,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
-        <main className="public-surface min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
           <div className="mx-auto max-w-4xl space-y-8">
             <Breadcrumbs items={breadcrumbItems} />
 
@@ -350,7 +350,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
         />
-        <main className="public-surface min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12" dir="rtl">
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12" dir="rtl">
           <div className="mx-auto max-w-4xl space-y-8">
             <Breadcrumbs items={breadcrumbItems} />
 
@@ -506,8 +506,8 @@ export default async function DynamicSlugPage({ params }: PageProps) {
           </>
         )}
 
-        <main className="public-surface min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
-          <article className="relative mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-8 md:p-10">
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+          <article className="relative mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-sm md:p-10">
             {isAdmin && (!article.isPublished || article.noIndex || article.noFollow) && (
               <div className="mb-6 flex flex-wrap gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
@@ -553,7 +553,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             </header>
 
             {article.featuredImage && (
-              <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl">
+              <div className="relative mb-8 h-72 w-full overflow-hidden rounded-xl md:h-96">
                 <Image
                   src={article.featuredImage}
                   alt={article.altText || parsedTitle}
@@ -568,7 +568,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             {headings.length > 0 && <TableOfContents headings={headings} />}
 
             <div
-              className="public-prose prose prose-lg max-w-none leading-relaxed text-gray-800 prose-headings:scroll-mt-24 prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl"
+              className="prose prose-lg max-w-none leading-relaxed text-gray-800 prose-headings:scroll-mt-24 prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl"
               dangerouslySetInnerHTML={{ __html: processedContent }}
             />
 
@@ -604,7 +604,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
 
     return (
       <>
-        <main className="public-surface min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
+        <main className="min-h-screen bg-gray-50 px-4 py-10 pb-24 md:px-8 md:pb-12">
           <article className="mx-auto max-w-4xl rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-10">
             <Breadcrumbs items={breadcrumbs} />
 
@@ -625,7 +625,7 @@ export default async function DynamicSlugPage({ params }: PageProps) {
             </header>
 
             <div
-              className="public-prose prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
+              className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
               dangerouslySetInnerHTML={{ __html: parsedPageContent }}
             />
           </article>
