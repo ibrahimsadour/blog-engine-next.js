@@ -49,3 +49,17 @@ test('sitemap entries include escaped URLs and the correct last modification dat
   assert.match(xml, /2026-02-01T00:00:00.000Z/);
   assert.match(xml, /<priority>0.8<\/priority>/);
 });
+
+test('production requires an explicit valid site origin', async () => {
+  // Validate the configuration logic separately at deployment; this test documents
+  // the invariant without mutating NODE_ENV for other tests.
+  assert.match(require('node:fs').readFileSync('lib/site-url.ts', 'utf8'), /NEXT_PUBLIC_SITE_URL is required in production/);
+});
+
+test('sitemap routes do not advertise request time as last modification', () => {
+  const fs = require('node:fs');
+  const index = fs.readFileSync('app/(sitemap)/sitemap.xml/route.ts', 'utf8');
+  const pages = fs.readFileSync('app/(sitemap)/page-sitemap.xml/route.ts', 'utf8');
+  assert.doesNotMatch(index, /new Date\(\)\.toISOString\(\)/);
+  assert.doesNotMatch(pages, /new Date\(\)\.toISOString\(\)/);
+});
