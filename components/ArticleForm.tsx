@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ArticleEditorLayout from '@/components/article/ArticleEditorLayout';
+import { resolveArticlePublicationIntent } from '@/lib/article-save-intent';
 import { getErrorMessage } from '@/lib/errors';
 import type { ActionResult, ArticleEditorData, CategorySummary } from '@/types/admin';
 
@@ -188,6 +189,9 @@ export default function ArticleForm({ categories, action, initialData, siteUrl =
 
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const intent = submitter instanceof HTMLButtonElement && submitter.name === 'publicationIntent' ? submitter.value : undefined;
+    const publishOnSave = resolveArticlePublicationIntent(isPublished, intent);
 
     const cleanSlug = slug.trim().replace(/^-+|-+$/g, '');
 
@@ -226,7 +230,7 @@ export default function ArticleForm({ categories, action, initialData, siteUrl =
     formData.set('canonicalUrl', canonicalUrl);
     formData.set('content', content);
     formData.set('faqs', JSON.stringify(validFaqs));
-    formData.set('isPublished', isPublished ? 'true' : 'false');
+    formData.set('isPublished', publishOnSave ? 'true' : 'false');
     formData.set('noIndex', noIndex ? 'true' : 'false');
     formData.set('noFollow', noFollow ? 'true' : 'false');
 
@@ -235,6 +239,7 @@ export default function ArticleForm({ categories, action, initialData, siteUrl =
 
     try {
       const result = await action(formData);
+      setIsPublished(publishOnSave);
 
       localStorage.removeItem(storageKey);
       setIsDirty(false);
@@ -245,7 +250,7 @@ export default function ArticleForm({ categories, action, initialData, siteUrl =
         window.history.replaceState(null, '', `/admin/articles/${result.id}/edit`);
       }
 
-      toast.success(isPublished ? 'تم حفظ ونشر المقال بنجاح!' : 'تم حفظ التعديلات كمسودة بنجاح!', {
+      toast.success(publishOnSave ? 'تم حفظ ونشر المقال بنجاح!' : 'تم حفظ التعديلات كمسودة بنجاح!', {
         id: toastId,
       });
 
@@ -266,6 +271,7 @@ export default function ArticleForm({ categories, action, initialData, siteUrl =
       categories={categories}
       faqs={faqs}
       isEditMode={Boolean(activeArticleId)}
+      isPublishedOnServer={initialData?.isPublished ?? false}
       isSubmitting={isSubmitting}
       isSavedLocally={isSavedLocally}
       isDirty={isDirty}
