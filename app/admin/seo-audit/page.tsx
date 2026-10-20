@@ -23,12 +23,10 @@ export default async function SeoAuditPage() {
     findings.push({ severity, url, issue });
   const titles = new Map<string, string>();
   const keywords = new Map<string, string>();
-  const urls = new Set<string>();
   const entries = [...articles.map(a => ({ ...a, type: 'article' })),
     ...pages.map(p => ({ ...p, type: 'page' }))];
   for (const entry of entries) {
     const url = buildSiteUrl(entry.slug);
-    urls.add('/' + entry.slug);
     const title = (entry.metaTitle || entry.title).trim().toLowerCase();
     if (titles.has(title)) add('high', url, 'عنوان SEO مكرر مع ' + titles.get(title));
     else titles.set(title, url);
