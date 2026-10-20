@@ -14,17 +14,20 @@ export async function GET() {
 
   const dynamicContent = isDynamicContentEnabled();
   const automotive = isAutomotiveSite();
-  const [cityCount, serviceCount, carCount] = dynamicContent ? await Promise.all([
+  const [cityCount, serviceCount, carCount, articleCount] = await Promise.all([
+    ...(dynamicContent ? [
     db.city.count({ where: { isActive: true } }),
     db.service.count({ where: { isActive: true } }),
     automotive ? db.car.count({ where: { isActive: true } }) : Promise.resolve(0),
-  ]) : [0, 0, 0];
+    ] : [Promise.resolve(0), Promise.resolve(0), Promise.resolve(0)]),
+    db.article.count({ where: { isPublished: true, noIndex: false } }),
+  ]);
   const shards = (path: string, total: number) => Array.from(
     { length: pageCount(total) }, (_, index) => sitemap(`${path}?page=${index + 1}`)
   );
   const entries = [
     sitemap('page-sitemap.xml'),
-    sitemap('post-sitemap.xml'),
+    ...shards('post-sitemap.xml', articleCount),
     sitemap('category-sitemap.xml'),
     ...(dynamicContent
       ? [
