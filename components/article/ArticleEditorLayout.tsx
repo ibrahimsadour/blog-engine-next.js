@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import type { ChangeEventHandler, FormEventHandler, ReactNode } from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
 import { ArrowRight, CheckCircle2, ChevronDown, ExternalLink, Save, FileText, Link2, Search, ImageIcon, Settings2 } from 'lucide-react';
+import EditorBox from './EditorBox';
 import ImageUploader from '@/components/ImageUploader';
 import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
 import DraftRecoveryBanner from '@/components/article/DraftRecoveryBanner';
@@ -55,22 +56,6 @@ interface ArticleEditorLayoutProps {
   onFaqChange: (index: number, field: 'question' | 'answer', value: string) => void;
 }
 
-function EditorBox({ title, icon, children, collapsible = true }: {
-  title: string; icon?: ReactNode; children: ReactNode; collapsible?: boolean;
-}) {
-  const heading = <span className={styles.boxHeading}>{icon}{title}</span>;
-  return collapsible ? (
-    <details className={styles.box} open>
-      <summary className={styles.boxHeader}>{heading}<ChevronDown size={16} aria-hidden="true" /></summary>
-      <div className={styles.boxBody}>{children}</div>
-    </details>
-  ) : (
-    <section className={styles.box}>
-      <div className={styles.boxHeader}><h2>{heading}</h2></div>
-      <div className={styles.boxBody}>{children}</div>
-    </section>
-  );
-}
 
 export default function ArticleEditorLayout({
   values: v, onChange: change, categories, faqs, isEditMode, isPublishedOnServer, isSubmitting,

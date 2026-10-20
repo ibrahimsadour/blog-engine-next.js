@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
+import Link from 'next/link';
+import { ArrowRight, ExternalLink, FileText, Link2, Search, Save } from 'lucide-react';
+import SeoLiveOptimizer from '@/components/SeoLiveOptimizer';
+import EditorBox from '@/components/article/EditorBox';
+import { resolveArticlePublicationIntent } from '@/lib/article-save-intent';
+import styles from '@/components/article/ArticleEditorLayout.module.css';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
   ssr: false,
@@ -15,6 +21,7 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
 });
 
 interface PageFormProps {
+  siteUrl: string;
   initialData?: {
     id?: string;
     title?: string;
@@ -29,12 +36,20 @@ interface PageFormProps {
   action: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
 }
 
-export default function PageForm({ initialData, action }: PageFormProps) {
+export default function PageForm({ initialData, action, siteUrl }: PageFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialData?.title || '');
   const [slug, setSlug] = useState(initialData?.slug || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || '');
+  const [metaDesc, setMetaDesc] = useState(initialData?.metaDesc || '');
+  const [isPublished, setIsPublished] = useState(initialData?.isPublished ?? true);
+  const origin = siteUrl.replace(/\/$/, '');
+  const isEditMode = Boolean(initialData?.id);
+  const wordCount = content.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+  const saveText = isSubmitting ? 'جاري الحفظ...' : isEditMode ? 'تحديث الصفحة' : isPublished ? 'نشر الصفحة' : 'حفظ المسودة';
 
   // توليد وتنظيف الـ Slug تلقائياً عند كتابة العنوان في حال كان إنشاء جديد
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +94,13 @@ export default function PageForm({ initialData, action }: PageFormProps) {
     formData.set('title', title.trim());
     formData.set('slug', cleanSlug);
     formData.set('content', content);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const intent = submitter instanceof HTMLButtonElement && submitter.name === 'publicationIntent'
+      ? submitter.value : undefined;
+    const publishOnSave = resolveArticlePublicationIntent(isPublished, intent);
+    formData.set('isPublished', publishOnSave ? 'on' : '');
+    formData.set('metaTitle', metaTitle);
+    formData.set('metaDesc', metaDesc);
 
     setIsSubmitting(true);
     const toastId = toast.loading('جاري حفظ الصفحة...');
@@ -100,114 +122,77 @@ export default function PageForm({ initialData, action }: PageFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-bold text-gray-700">
-            عنوان الصفحة <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="title"
-            required
-            maxLength={160}
-            value={title}
-            onChange={handleTitleChange}
-            placeholder="مثال: من نحن أو سياسة الخصوصية"
-            className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
-          />
+    <form onSubmit={handleSubmit} className={styles.editor} dir="rtl" aria-busy={isSubmitting}>
+      <header className={styles.toolbar}>
+        <div className={styles.toolbarTitle}>
+          <Link href="/admin/pages" className={styles.backLink} aria-label="العودة إلى الصفحات"><ArrowRight size={19} /></Link>
+          <div><h1>{isEditMode ? 'تعديل الصفحة' : 'إضافة صفحة جديدة'}</h1><p>الصفحات / {isEditMode ? 'تحرير' : 'إضافة جديد'}</p></div>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-bold text-gray-700">
-            الرابط الدائم (Slug) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="slug"
-            required
-            maxLength={200}
-            value={slug}
-            onChange={handleSlugChange}
-            placeholder="about-us"
-            className="w-full rounded-xl border border-gray-300 p-3 text-sm font-mono focus:border-blue-500 focus:outline-hidden"
-            dir="ltr"
-          />
+        <div className={styles.toolbarActions}>
+          <span className={styles.saveStatus} role="status">{isSubmitting ? 'جاري حفظ الصفحة...' : 'احفظ التغييرات قبل مغادرة الصفحة'}</span>
+          {initialData?.slug && <a href={`/${initialData.slug}`} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}><ExternalLink size={14} />معاينة المحفوظ</a>}
+          <button type="submit" disabled={isSubmitting} className={styles.primaryButton}><Save size={15} />{saveText}</button>
         </div>
-      </div>
-
-      <div>
-        <label className="mb-2 block text-xs font-bold text-gray-700">محتوى الصفحة</label>
-        <RichTextEditor content={content} onChange={setContent} />
-      </div>
-
-      {/* إعدادات SEO وخيارات العرض */}
-      <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-        <h3 className="text-xs font-bold text-gray-800">إعدادات الـ SEO والعرض</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs font-bold text-gray-700">Meta Title</label>
-            <input
-              type="text"
-              name="metaTitle"
-              maxLength={300}
-              defaultValue={initialData?.metaTitle || ''}
-              placeholder="عنوان مخصص للظهور في محرك البحث"
-              className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
-            />
+      </header>
+      <fieldset disabled={isSubmitting} className={styles.formFields}>
+        <div className={styles.columns}>
+          <div className={styles.mainColumn}>
+            <section className={styles.titleSection}>
+              <label htmlFor="page-title" className={styles.srOnly}>عنوان الصفحة</label>
+              <input id="page-title" name="title" type="text" required maxLength={160} value={title} onChange={handleTitleChange}
+                placeholder="أضف عنوان الصفحة هنا" className={styles.titleInput} />
+              <div className={styles.permalink}>
+                <label htmlFor="page-slug"><Link2 size={14} aria-hidden="true" />الرابط الدائم</label>
+                <div className={styles.permalinkInput}>
+                  {origin && <span dir="ltr">{origin}/</span>}
+                  <input id="page-slug" name="slug" required maxLength={200} dir="ltr" value={slug}
+                    onChange={handleSlugChange} placeholder="about-us" autoCapitalize="none" spellCheck={false} />
+                </div>
+              </div>
+              {isEditMode && <p className={styles.help}>تغيير رابط صفحة منشورة قد يتطلب تحويل الرابط القديم إلى الجديد.</p>}
+            </section>
+            <section className={styles.box} aria-label="محتوى الصفحة">
+              <div className={styles.boxHeader}><h2 className={styles.boxHeading}><FileText size={16} aria-hidden="true" />محتوى الصفحة</h2></div>
+              <div className={styles.contentEditor}><RichTextEditor content={content} onChange={setContent} /></div>
+              <div className={styles.editorFooter}><span>عدد الكلمات: {wordCount}</span><span>محرر مرئي وHTML</span></div>
+            </section>
+            <EditorBox title="إعدادات السيو ومعاينة البحث" icon={<Search size={16} aria-hidden="true" />} collapsible={false}>
+              <SeoLiveOptimizer title={title} slug={slug} metaTitle={metaTitle} metaDesc={metaDesc}
+                targetKeyword="" content={content} onMetaTitleChange={setMetaTitle} onMetaDescChange={setMetaDesc}
+                siteUrl={origin} variant="classic" />
+            </EditorBox>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-bold text-gray-700">Meta Description</label>
-            <input
-              type="text"
-              name="metaDesc"
-              maxLength={500}
-              defaultValue={initialData?.metaDesc || ''}
-              placeholder="وصف مختصر للصفحة في محرك البحث"
-              className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
-            />
-          </div>
+          <aside className={styles.sideColumn} aria-label="إعدادات الصفحة">
+            <div className={styles.publishBox}>
+              <EditorBox title="نشر الصفحة" collapsible={false}>
+                <div className={styles.publishStatus}><span className={isPublished ? styles.liveDot : styles.draftDot} />{isPublished ? 'ستكون الصفحة منشورة' : 'ستُحفظ كمسودة'}</div>
+                <div className={styles.field}>
+                  <label htmlFor="page-status">حالة الصفحة</label>
+                  <select id="page-status" value={isPublished ? 'published' : 'draft'} onChange={(e) => setIsPublished(e.target.value === 'published')}>
+                    <option value="published">منشورة — ظاهرة للزوار</option>
+                    <option value="draft">مسودة — غير ظاهرة للزوار</option>
+                  </select>
+                </div>
+                <div className={styles.publishActions}>
+                  {initialData?.slug ? (
+                    <a href={`/${initialData.slug}`} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}><ExternalLink size={14} aria-hidden="true" />معاينة الصفحة</a>
+                  ) : (
+                    <button type="button" disabled className={styles.secondaryButton} title="احفظ المسودة أولًا لإتاحة المعاينة">معاينة الصفحة</button>
+                  )}
+                  <button type="submit" name="publicationIntent" value={isPublished ? 'publish' : 'draft'} disabled={isSubmitting} className={styles.primaryButton}>{saveText}</button>
+                  {!initialData?.isPublished && <button type="submit" name="publicationIntent" value="draft" disabled={isSubmitting} className={styles.secondaryButton}>حفظ المسودة</button>}
+                </div>
+                {!initialData?.slug && <p className={styles.help}>احفظ المسودة أولًا ثم افتحها لإتاحة المعاينة.</p>}
+              </EditorBox>
+            </div>
+            <EditorBox title="الظهور في قوائم الموقع" collapsible={false}>
+              <label className={styles.checkbox}><input type="checkbox" name="showInHeader" defaultChecked={initialData?.showInHeader ?? false} />إظهار في القائمة العلوية (Header)</label>
+              <label className={styles.checkbox}><input type="checkbox" name="showInFooter" defaultChecked={initialData?.showInFooter ?? true} />إظهار في الفوتر (Footer)</label>
+              <p className={styles.help}>اختر أماكن عرض رابط الصفحة في قوائم الموقع.</p>
+            </EditorBox>
+          </aside>
         </div>
-
-        <div className="flex flex-wrap gap-6 border-t border-gray-100 pt-3">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-gray-700">
-            <input
-              type="checkbox"
-              name="isPublished"
-              defaultChecked={initialData ? initialData.isPublished : true}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            نشر الصفحة مباشرة
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-gray-700">
-            <input
-              type="checkbox"
-              name="showInHeader"
-              defaultChecked={initialData?.showInHeader || false}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            إظهار في القائمة العلوية (Header)
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-gray-700">
-            <input
-              type="checkbox"
-              name="showInFooter"
-              defaultChecked={initialData ? initialData.showInFooter : true}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            إظهار في الفوتر (Footer)
-          </label>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full cursor-pointer rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-98 disabled:opacity-50"
-      >
-        {isSubmitting ? 'جاري الحفظ...' : 'حفظ ونشر الصفحة'}
-      </button>
+      </fieldset>
     </form>
   );
 }
