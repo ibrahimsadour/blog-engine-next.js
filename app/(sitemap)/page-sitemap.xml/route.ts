@@ -26,6 +26,14 @@ export async function GET() {
     logDatabaseError('sitemap.pages', error);
   }
 
+  // Avoid emitting published custom pages with the same URL as automatic directory landings.
+  const reserved = new Set<string>();
+  if (isDynamicContentEnabled()) {
+    reserved.add('cities');
+    if (isAutomotiveSite()) reserved.add('cars');
+  }
+  const uniquePages = pages.filter((page) => !reserved.has(page.slug.replace(/^\\/+|\\/+$/g, '').toLowerCase()));
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -35,7 +43,7 @@ export async function GET() {
   </url>
   ${isDynamicContentEnabled() && isAutomotiveSite() ? `<url><loc>${buildSiteUrl('cars')}</loc></url>` : ''}
   ${isDynamicContentEnabled() ? `<url><loc>${buildSiteUrl('cities')}</loc></url>` : ''}
-  ${pages
+  ${uniquePages
     .map((p) => sitemapUrlEntry(buildSiteUrl(p.slug), p.updatedAt, '0.7'))
     .join('')}
 </urlset>`;
