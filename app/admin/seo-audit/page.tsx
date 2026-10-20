@@ -57,6 +57,9 @@ export default async function SeoAuditPage() {
     add('high', buildSiteUrl(car.slug), 'تضارب مسار السيارة مع مقال أو صفحة');
   for (const service of services) if (!service.slug.trim())
     add('high', buildSiteUrl(), 'خدمة دون مسار صالح');
+  const robotsRules = settings.robotsTxt.split(/\r?\n/).map(line => line.trim());
+  if (robotsRules.some(line => /^disallow:\s*\/$/i.test(line)))
+    add('high', buildSiteUrl('robots.txt'), 'Robots.txt يحتوي على Disallow: / — راجع تعليمات الحظر للمجموعات المعنية');
   if (!settings.phoneNumber || settings.phoneNumber === '+96500000000')
     add('high', buildSiteUrl(), 'رقم هاتف النشاط غير مُهيأ');
   for (const r of redirects) {
