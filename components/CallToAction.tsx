@@ -1,3 +1,4 @@
+import { Phone, MessageCircle } from 'lucide-react';
 import { getSiteSettings } from '@/lib/settings';
 
 interface CallToActionProps {
@@ -16,9 +17,9 @@ export default async function CallToAction({
   // جلب الإعدادات الحية من قاعدة البيانات
   const settings = await getSiteSettings();
 
-  const finalTitle = title || 'هل تحتاج إلى خدمة سريعة وفورية؟';
+  const finalTitle = title || 'هل تحتاج إلى مساعدة في اختيار الخدمة؟';
   const finalDescription =
-    description || 'تواصل معنا مباشرة للحصول على الخدمة على مدار 24 ساعة بأفضل جودة وسرعة استجابة';
+    description || 'تواصل للاستفسار عن الخدمة المطلوبة والتغطية والتوفر قبل تأكيد طلبك';
 
   // استخدام الأرقام الممررة أو جلبها ديناميكياً من الإعدادات
   const rawPhone = phone || settings.phoneNumber || '+96500000000';
@@ -28,25 +29,27 @@ export default async function CallToAction({
   const cleanWhatsapp = rawWhatsapp.replace(/[^0-9]/g, '');
 
   return (
-    <section className="my-10 rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-800 p-8 text-white shadow-lg">
+    <section className="public-surface relative my-10 overflow-hidden rounded-3xl border border-blue-800 bg-gradient-to-l from-blue-950 via-blue-900 to-slate-900 p-6 text-white shadow-lg sm:p-10">
       <div className="flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-right">
         <div>
-          <h2 className="text-xl font-bold md:text-2xl">{finalTitle}</h2>
-          <p className="mt-2 text-sm text-blue-100 md:text-base">{finalDescription}</p>
+          <h2 className="text-balance text-xl font-bold leading-relaxed md:text-2xl">{finalTitle}</h2>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-blue-100">{finalDescription}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-center gap-3">
           <a
             href={`tel:${rawPhone}`}
-            className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-800 shadow-sm transition hover:bg-blue-50"
+            className="public-button bg-white text-blue-900 shadow-sm hover:bg-blue-50"
           >
+            <Phone size={17} aria-hidden="true" />
             اتصل الآن
           </a>
           <a
             href={`https://wa.me/${cleanWhatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500"
+            className="public-button border border-white/25 bg-white/10 text-white hover:bg-white/20"
           >
+            <MessageCircle size={18} aria-hidden="true" />
             واتساب مباشر
           </a>
         </div>
