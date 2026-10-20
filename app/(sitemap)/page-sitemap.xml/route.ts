@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const baseUrl = getSiteUrl();
-  const now = new Date().toISOString();
 
   let pages: { slug: string; updatedAt: Date }[] = [];
   try {
@@ -30,12 +29,11 @@ export async function GET() {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  ${sitemapUrlEntry(buildSiteUrl('cars'), new Date(now), '0.9')}
-  ${sitemapUrlEntry(buildSiteUrl('cities'), new Date(now), '0.9')}
+  <url><loc>${buildSiteUrl('cars')}</loc></url>
+  <url><loc>${buildSiteUrl('cities')}</loc></url>
   ${pages
     .map((p) => sitemapUrlEntry(buildSiteUrl(p.slug), p.updatedAt, '0.7'))
     .join('')}
