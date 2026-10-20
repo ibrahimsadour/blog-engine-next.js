@@ -255,7 +255,7 @@ export default function CityServiceView({
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="city-service-other-targets" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمة {service.name} متوفرة أيضاً في المدن والمناطق التالية</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {otherCities.map((c) => (
+              {getStableMultiple(otherCities, `links-target-${seed}`, 8).map((c) => (
                 <Link
                   key={c.id}
                   href={`/${c.slug}/${service.slug}`}
@@ -272,7 +272,7 @@ export default function CityServiceView({
           <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <h2 id="city-service-other-services" className="scroll-mt-24 text-xl font-bold text-gray-900">خدمات أخرى متوفرة في {city.name}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {otherServices.map((s) => (
+              {getStableMultiple(otherServices, `links-service-${seed}`, 8).map((s) => (
                 <Link
                   key={s.id}
                   href={`/${city.slug}/${s.slug}`}

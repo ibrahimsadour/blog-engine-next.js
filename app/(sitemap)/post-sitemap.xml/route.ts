@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { buildSiteUrl, escapeXml, getSiteUrl } from '@/lib/site-url';
 import { logDatabaseError } from '@/lib/logger';
+import { NextRequest } from 'next/server';
+import { pageCount, sitemapPage, sitemapSlice } from '@/lib/sitemap-pagination';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const baseUrl = getSiteUrl();
   let articles: Array<{ title: string; slug: string; featuredImage: string | null; updatedAt: Date }> = [];
 
@@ -19,7 +21,9 @@ export async function GET() {
     logDatabaseError('sitemap.articles', error);
   }
 
-  const entries = articles.map((item) => {
+  const page = sitemapPage(request.nextUrl.searchParams.get('page'));
+  if (page === null || page > pageCount(articles.length)) return new NextResponse('Not Found', { status: 404 });
+  const entries = sitemapSlice(articles, page).map((item) => {
     let imageXml = '';
     if (item.featuredImage) {
       let imageUrl: string | null = null;

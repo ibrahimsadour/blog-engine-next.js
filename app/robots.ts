@@ -71,7 +71,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
     return {
       rules,
-      ...(customSitemap ? { sitemap: customSitemap } : {}),
+      sitemap: customSitemap || `${baseUrl}/sitemap.xml`,
       ...(customHost ? { host: customHost } : {}),
     };
   }

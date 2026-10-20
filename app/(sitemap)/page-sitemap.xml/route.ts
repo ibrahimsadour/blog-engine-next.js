@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { buildSiteUrl, getSiteUrl, sitemapUrlEntry } from '@/lib/site-url';
 import { logDatabaseError } from '@/lib/logger';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,8 +33,8 @@ export async function GET() {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  <url><loc>${buildSiteUrl('cars')}</loc></url>
-  <url><loc>${buildSiteUrl('cities')}</loc></url>
+  ${isDynamicContentEnabled() && isAutomotiveSite() ? `<url><loc>${buildSiteUrl('cars')}</loc></url>` : ''}
+  ${isDynamicContentEnabled() ? `<url><loc>${buildSiteUrl('cities')}</loc></url>` : ''}
   ${pages
     .map((p) => sitemapUrlEntry(buildSiteUrl(p.slug), p.updatedAt, '0.7'))
     .join('')}

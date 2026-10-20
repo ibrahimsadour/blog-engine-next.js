@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { escapeXml, getSiteUrl } from '@/lib/site-url';
 import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
+import { db } from '@/lib/db';
+import { pageCount } from '@/lib/sitemap-pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,15 +13,27 @@ export async function GET() {
   </sitemap>`;
 
   const dynamicContent = isDynamicContentEnabled();
+  const automotive = isAutomotiveSite();
+  const [cityCount, serviceCount, carCount, articleCount] = await Promise.all([
+    ...(dynamicContent ? [
+    db.city.count({ where: { isActive: true } }),
+    db.service.count({ where: { isActive: true } }),
+    automotive ? db.car.count({ where: { isActive: true } }) : Promise.resolve(0),
+    ] : [Promise.resolve(0), Promise.resolve(0), Promise.resolve(0)]),
+    db.article.count({ where: { isPublished: true, noIndex: false } }),
+  ]);
+  const shards = (path: string, total: number) => Array.from(
+    { length: pageCount(total) }, (_, index) => sitemap(`${path}?page=${index + 1}`)
+  );
   const entries = [
     sitemap('page-sitemap.xml'),
-    sitemap('post-sitemap.xml'),
+    ...shards('post-sitemap.xml', articleCount),
     sitemap('category-sitemap.xml'),
     ...(dynamicContent
       ? [
           sitemap('directory-sitemap.xml'),
-          sitemap('city-service-sitemap.xml'),
-          ...(isAutomotiveSite() ? [sitemap('car-service-sitemap.xml')] : []),
+          ...shards('city-service-sitemap.xml', cityCount * serviceCount),
+          ...(automotive ? shards('car-service-sitemap.xml', carCount * serviceCount) : []),
         ]
       : []),
   ];

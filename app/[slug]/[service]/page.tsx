@@ -22,7 +22,7 @@ const getServiceRouteData = cache(async (slug: string, serviceSlug: string) => {
     db.service.findUnique({ where: { slug: serviceSlug, isActive: true } }),
   ]);
   if ((!city && !car) || !service) return { city, car, service, customContent: null, template: null };
-  const [customContent, template] = car
+  const [customContent, template] = car && !city
     ? await Promise.all([
         db.carServiceContent.findUnique({ where: { carId_serviceId: { carId: car.id, serviceId: service.id } } }),
         db.globalCarServiceTemplate.findFirst(),
@@ -109,7 +109,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if ((!city && !car) || !service) return {};
 
-  const isCar = Boolean(car);
+  const isCar = Boolean(car && !city);
   const targetName = isCar ? car!.name : city!.name;
   const { phone, siteName } = await getSiteConfig();
   const canonicalUrl = buildSiteUrl(slug, serviceSlug);
@@ -167,7 +167,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: metaTitle,
       description: metaDesc,
       url: canonicalUrl,
-      type: 'article',
+      type: 'website',
       ...(selectedImage ? { images: [{ url: selectedImage }] } : {}),
     },
   };
@@ -190,12 +190,12 @@ export default async function DynamicServiceCityOrCarPage({ params }: Props) {
     const [otherCities, otherServices] = await Promise.all([
       db.city.findMany({
         where: { slug: { not: city.slug }, isActive: true },
-        take: 8,
+        take: 24,
         orderBy: { sortOrder: 'asc' },
       }),
       db.service.findMany({
         where: { slug: { not: service.slug }, isActive: true },
-        take: 8,
+        take: 24,
         orderBy: { sortOrder: 'asc' },
       }),
     ]);
