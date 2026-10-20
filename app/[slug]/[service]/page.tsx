@@ -167,7 +167,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: metaTitle,
       description: metaDesc,
       url: canonicalUrl,
-      type: 'article',
+      type: 'website',
       ...(selectedImage ? { images: [{ url: selectedImage }] } : {}),
     },
   };
