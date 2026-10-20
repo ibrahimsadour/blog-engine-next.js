@@ -32,7 +32,7 @@ export async function GET() {
     reserved.add('cities');
     if (isAutomotiveSite()) reserved.add('cars');
   }
-  const uniquePages = pages.filter((page) => !reserved.has(page.slug.replace(/^\\/+|\\/+$/g, '').toLowerCase()));
+  const uniquePages = pages.filter((page) => !reserved.has(page.slug.trim().toLowerCase()));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
