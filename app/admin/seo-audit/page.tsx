@@ -23,8 +23,8 @@ export default async function SeoAuditPage() {
     findings.push({ severity, url, issue });
   const titles = new Map<string, string>();
   const keywords = new Map<string, string>();
-  const entries = [...articles.map(a => ({ ...a, type: 'article' })),
-    ...pages.map(p => ({ ...p, type: 'page' }))];
+  const entries = [...articles.map(a => ({ ...a, type: 'article' as const })),
+    ...pages.map(p => ({ ...p, type: 'page' as const }))];
   for (const entry of entries) {
     const url = buildSiteUrl(entry.slug);
     const title = (entry.metaTitle || entry.title).trim().toLowerCase();
@@ -32,7 +32,7 @@ export default async function SeoAuditPage() {
     else titles.set(title, url);
     if (!entry.metaDesc?.trim()) add('medium', url, 'وصف Meta غير مخصص');
     if (entry.noIndex) add('medium', url, 'صفحة منشورة مع noindex — راجع القرار');
-    if (entry.type === 'article' && 'featuredImage' in entry) {
+    if (entry.type === 'article') {
       if (!entry.featuredImage) add('medium', url, 'لا توجد صورة رئيسية');
       if (entry.featuredImage && !entry.altText?.trim()) add('medium', url, 'الصورة الرئيسية دون Alt مخصص');
       if (!entry.content?.trim()) add('high', url, 'محتوى فارغ');
