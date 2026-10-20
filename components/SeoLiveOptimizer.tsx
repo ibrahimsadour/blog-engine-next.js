@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import styles from '@/components/article/ArticleEditorLayout.module.css';
 
 interface SeoLiveOptimizerProps {
+  siteUrl?: string;
+  variant?: 'default' | 'classic';
   title: string;
   slug: string;
   metaTitle: string;
@@ -22,7 +25,11 @@ export default function SeoLiveOptimizer({
   content,
   onMetaTitleChange,
   onMetaDescChange,
+  siteUrl = '',
+  variant = 'default',
 }: SeoLiveOptimizerProps) {
+  const classic = variant === 'classic';
+  const previewOrigin = (siteUrl || process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
 
   // تجهيز النصوص للمعاينة
@@ -39,7 +46,7 @@ export default function SeoLiveOptimizer({
   const getTitleStatus = () => {
     if (titleLen === 0) return { color: 'text-gray-400', bg: 'bg-gray-200', text: 'فارغ (سيتم استخدام H1 تلقائياً)' };
     if (titleLen < 40) return { color: 'text-amber-500', bg: 'bg-amber-400', text: 'قصير قليلاً' };
-    if (titleLen <= 60) return { color: 'text-emerald-600', bg: 'bg-emerald-500', text: 'مثالي جداً' };
+    if (titleLen <= 60) return { color: 'text-emerald-600', bg: 'bg-emerald-500', text: 'ضمن النطاق الإرشادي' };
     return { color: 'text-red-500', bg: 'bg-red-500', text: 'طويل (قد يُقتطع في جوجل)' };
   };
 
@@ -47,7 +54,7 @@ export default function SeoLiveOptimizer({
     if (descLen === 0) return { color: 'text-gray-400', bg: 'bg-gray-200', text: 'فارغ' };
     if (descLen < 120) return { color: 'text-amber-500', bg: 'bg-amber-400', text: 'قصير' };
     if (descLen <= 160) return { color: 'text-emerald-600', bg: 'bg-emerald-500', text: 'مثالي جداً' };
-    return { color: 'text-red-500', bg: 'bg-red-500', text: 'طويل (سيُقتطع في جوجل)' };
+    return { color: 'text-red-500', bg: 'bg-red-500', text: 'طويل (قد يُقتطع في جوجل)' };
   };
 
   const titleStatus = getTitleStatus();
@@ -71,17 +78,17 @@ export default function SeoLiveOptimizer({
   const first100Words = words.slice(0, 100).join(' ').toLowerCase();
   const inIntro = hasKeyword && first100Words.includes(kw);
   // 5. كثافة الكلمة
-  const kwMatches = hasKeyword ? (cleanContentText.toLowerCase().match(new RegExp(kw, 'g')) || []).length : 0;
+  const kwMatches = hasKeyword ? cleanContentText.toLowerCase().split(kw).length - 1 : 0;
   const kwDensity = totalWords > 0 && hasKeyword ? ((kwMatches / totalWords) * 100).toFixed(1) : '0';
 
   return (
-    <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
+    <div className={classic ? styles.seoPanel : "space-y-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs"}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-600">
             SEO
           </span>
-          <h3 className="text-sm font-bold text-gray-900">مساعد الـ On-Page SEO والمعاينة الحية</h3>
+          <h3 className="text-sm font-bold text-gray-900">معاينة نتيجة البحث</h3>
         </div>
 
         {/* أزرار تبديل نوع العرض */}
@@ -121,10 +128,10 @@ export default function SeoLiveOptimizer({
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
               G
             </div>
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col">
               <span className="text-[11px] font-bold text-gray-800">موقعك الإلكتروني</span>
-              <span className="font-mono text-[10px] text-gray-500" dir="ltr">
-                https://yourdomain.com/{displaySlug}
+              <span className="break-all font-mono text-[10px] text-gray-500" dir="ltr">
+                {previewOrigin || 'نطاق الموقع'}/{displaySlug}
               </span>
             </div>
           </div>
@@ -141,17 +148,20 @@ export default function SeoLiveOptimizer({
         </div>
       </div>
 
+      <p className="text-xs leading-6 text-gray-500">معاينة تقريبية؛ قد تعرض محركات البحث عنوانًا أو وصفًا مختلفًا. مؤشرات الطول والكلمات إرشادية ولا تضمن الترتيب.</p>
+
       {/* حقول Meta Title & Description مع العدادات الذكية */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={classic ? "grid gap-5" : "grid gap-4 sm:grid-cols-2"}>
         <div>
-          <div className="mb-1 flex items-center justify-between text-xs">
-            <label className="font-bold text-gray-700">Meta Title (عنوان محرك البحث)</label>
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <label htmlFor="seo-meta-title" className="font-bold text-gray-700">Meta Title (عنوان محرك البحث)</label>
             <span className={`font-mono font-bold ${titleStatus.color}`}>
               {titleLen}/60 ({titleStatus.text})
             </span>
           </div>
           <input
             type="text"
+            id="seo-meta-title"
             name="metaTitle"
             value={metaTitle}
             onChange={(e) => onMetaTitleChange(e.target.value)}
@@ -169,14 +179,15 @@ export default function SeoLiveOptimizer({
 
         <div>
           <div className="mb-1 flex items-center justify-between text-xs">
-            <label className="font-bold text-gray-700">Meta Description (الوصف في محرك البحث)</label>
+            <label htmlFor="seo-meta-description" className="font-bold text-gray-700">Meta Description (الوصف في محرك البحث)</label>
             <span className={`font-mono font-bold ${descStatus.color}`}>
               {descLen}/160 ({descStatus.text})
             </span>
           </div>
           <textarea
+            id="seo-meta-description"
             name="metaDesc"
-            rows={2}
+            rows={3}
             value={metaDesc}
             onChange={(e) => onMetaDescChange(e.target.value)}
             placeholder="وصف مخصص للظهور في محركات البحث..."
@@ -194,7 +205,7 @@ export default function SeoLiveOptimizer({
 
       {/* قائمة التدقيق الحية للكلمة المفتاحية (Keyword Checklist) */}
       <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold text-gray-800">
             تدقيق الكلمة المفتاحية: {targetKeyword ? <span className="text-blue-600 font-black">&quot;{targetKeyword}&quot;</span> : <span className="text-gray-400">(لم تحدد كلمة بعد)</span>}
           </span>
@@ -214,7 +225,7 @@ export default function SeoLiveOptimizer({
           <div className="flex items-center gap-2">
             <span>{inSlug ? '✅' : '❌'}</span>
             <span className={inSlug ? 'text-gray-700 font-bold' : 'text-gray-400'}>
-              موجودة في الرابط (Slug)
+              تطابق نصي مع الرابط (الترجمة الإنجليزية مقبولة)
             </span>
           </div>
 

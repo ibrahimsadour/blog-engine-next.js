@@ -1,3 +1,4 @@
+import { getSiteUrl } from '@/lib/site-url';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
@@ -100,6 +101,7 @@ export default async function EditArticlePage({
       article={article}
       categories={categories}
       updateAction={updateArticleAction}
+      siteUrl={getSiteUrl()}
     />
   );
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE } from '@/lib/auth/session';
@@ -25,9 +26,10 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900" dir="rtl">
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* الشريط الجانبي (Sidebar) المخصص للوحة الإدارة */}
-        <aside className="sticky top-0 flex h-screen w-64 flex-col justify-between border-l border-gray-200 bg-white p-5 shadow-xs">
+        <AdminSidebar>
+        <aside className="max-h-[70dvh] w-full overflow-y-auto flex flex-col justify-between gap-6 border-l border-gray-200 bg-white p-5 shadow-xs lg:sticky lg:top-0 lg:h-screen lg:max-h-none lg:w-64">
           <div>
             {/* عنوان اللوحة والشعار */}
             <div className="mb-8 flex items-center justify-between border-b border-gray-100 pb-4">
@@ -171,9 +173,10 @@ export default async function AdminLayout({
             </form>
           </div>
         </aside>
+        </AdminSidebar>
 
         {/* مساحة عرض الصفحات الداخلية */}
-        <main className="flex-1 p-8">
+        <main className="min-w-0 flex-1 bg-[#f0f0f1] p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

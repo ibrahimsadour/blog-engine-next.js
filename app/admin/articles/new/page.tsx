@@ -1,3 +1,4 @@
+import { getSiteUrl } from '@/lib/site-url';
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
 import { revalidatePath } from 'next/cache';
@@ -92,35 +93,15 @@ export default async function NewArticlePage() {
     redirect('/admin');
   }
 
-  return (
-    <div className="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white p-6 shadow-xs sm:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">إضافة مقال جديد</h1>
-          <p className="mt-1 text-xs text-gray-500">نشر محتوى جديد متوافق مع معايير الـ SEO</p>
-        </div>
-        <Link
-          href="/admin/categories"
-          className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100"
-        >
-          + إدارة التصنيفات
-        </Link>
-      </div>
-
-      {categories.length === 0 ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
-          <p className="font-bold text-amber-800">لا يوجد أي تصنيف حالياً في الموقع</p>
-          <p className="mt-1 text-xs text-amber-600">يجب إضافة تصنيف واحد على الأقل قبل إنشاء مقال جديد.</p>
-          <Link
-            href="/admin/categories"
-            className="mt-4 inline-block rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
-          >
-            الذهاب لإضافة تصنيف
-          </Link>
-        </div>
-      ) : (
-        <ArticleForm categories={categories} action={createArticleAction} />
-      )}
+  return categories.length === 0 ? (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
+      <h1 className="text-xl font-semibold text-gray-900">إضافة مقال جديد</h1>
+      <p className="mt-3 font-bold text-amber-800">أضف تصنيفًا واحدًا على الأقل قبل إنشاء المقال.</p>
+      <Link href="/admin/categories" className="mt-4 inline-block rounded border border-amber-700 bg-amber-600 px-4 py-2 text-sm text-white">
+        إضافة تصنيف
+      </Link>
     </div>
+  ) : (
+    <ArticleForm categories={categories} action={createArticleAction} siteUrl={getSiteUrl()} />
   );
 }
