@@ -15,8 +15,8 @@ export async function GET() {
       : Promise.resolve([]),
   ]);
   const entries = [
-    ...cities.map((item) => sitemapUrlEntry(buildSiteUrl(item.slug), item.updatedAt, '0.8')),
-    ...cars.map((item) => sitemapUrlEntry(buildSiteUrl(item.slug), item.updatedAt, '0.8')),
+    ...cities.filter((item) => !['cities', 'cars'].includes(item.slug.trim().toLowerCase())).map((item) => sitemapUrlEntry(buildSiteUrl(item.slug), item.updatedAt, '0.8')),
+    ...cars.filter((item) => !['cities', 'cars'].includes(item.slug.trim().toLowerCase())).map((item) => sitemapUrlEntry(buildSiteUrl(item.slug), item.updatedAt, '0.8')),
   ];
 
   return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, {
