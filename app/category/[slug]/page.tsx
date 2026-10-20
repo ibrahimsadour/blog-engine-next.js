@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BookOpen } from 'lucide-react';
+import ServiceIcon from '@/components/ServiceIcon';
 import { db } from '@/lib/db';
 import { generateBreadcrumbSchema } from '@/lib/schema';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -134,18 +136,21 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionSchema) }}
       />
 
-      <main className="min-h-screen bg-gray-50 px-4 py-10 md:px-8">
-        <div className="mx-auto max-w-5xl">
+      <main className="public-surface min-h-screen bg-gray-50 px-4 py-10 md:px-8">
+        <div className="mx-auto max-w-6xl">
           <Breadcrumbs items={breadcrumbItems} />
 
-          <header className="my-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-8">
+          <header className="my-8 rounded-3xl border border-slate-200 bg-gradient-to-l from-white to-blue-50/50 p-6 shadow-sm md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-bold text-blue-600">تصنيف الخدمات والمقالات</span>
+                <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+                  <ServiceIcon name={`${category.name} ${category.slug}`} />
+                </span>
+                <span className="public-eyebrow">تصنيف الخدمات والمقالات</span>
                 <h1 className="mt-1 text-2xl font-black text-gray-900 md:text-3xl">{category.name}</h1>
               </div>
               <span className="rounded-xl bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-700">
-                {category.articles.length} {category.articles.length === 1 ? 'مقال' : 'مقالات'}
+                {category._count.articles} {category._count.articles === 1 ? 'مقال' : 'مقالات'}
               </span>
             </div>
 
@@ -166,10 +171,10 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 {category.articles.map((article) => (
                   <article
                     key={article.id}
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs transition hover:-translate-y-1 hover:shadow-md"
+                    className="public-card group flex flex-col overflow-hidden"
                   >
-                    {article.featuredImage && (
-                      <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                    <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                      {article.featuredImage ? (
                         <Image
                           src={article.featuredImage}
                           alt={article.altText || article.title}
@@ -177,17 +182,19 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           className="object-cover transition duration-300 group-hover:scale-105"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <span className="flex h-full items-center justify-center bg-blue-50 text-blue-300"><BookOpen size={40} strokeWidth={1.25} aria-hidden="true" /></span>
+                      )}
+                    </div>
                     <div className="flex flex-1 flex-col p-5">
-                      <h2 className="line-clamp-2 text-base font-bold text-gray-900 group-hover:text-blue-600">
+                      <h2 className="line-clamp-2 text-lg leading-8 font-bold text-gray-900 group-hover:text-blue-600">
                         <Link href={`/${article.slug}`}>
                           {article.title}
                         </Link>
                       </h2>
 
                       {article.excerpt && (
-                        <p className="mt-2.5 line-clamp-3 flex-1 text-xs leading-relaxed text-gray-600">
+                        <p className="mt-2.5 line-clamp-3 flex-1 text-sm leading-7 text-slate-500">
                           {article.excerpt}
                         </p>
                       )}
