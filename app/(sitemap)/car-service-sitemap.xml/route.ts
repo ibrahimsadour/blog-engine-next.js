@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
 import { buildSiteUrl, latestDate, sitemapUrlEntry } from '@/lib/site-url';
 import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { pageCount, sitemapPage, sitemapSlice } from '@/lib/sitemap-pagination';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!isDynamicContentEnabled() || !isAutomotiveSite()) return new NextResponse('Not Found', { status: 404 });
 
   const [cars, services, template] = await Promise.all([
@@ -17,6 +18,9 @@ export async function GET() {
     db.globalCarServiceTemplate.findFirst({ select: { updatedAt: true } }),
   ]);
 
+  const page = sitemapPage(request.nextUrl.searchParams.get('page'));
+  if (page === null || page > pageCount(cars.length * services.length)) return new NextResponse('Not Found', { status: 404 });
+
   const entries = cars.flatMap((car) => services.map((service) => {
     const custom = car.carServices.find((item) => item.serviceId === service.id);
     return sitemapUrlEntry(
@@ -26,7 +30,7 @@ export async function GET() {
     );
   }));
 
-  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, {
+  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemapSlice(entries, page).join('')}</urlset>`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
   });
 }
