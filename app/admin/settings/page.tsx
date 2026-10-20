@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { requireAdminAction } from '@/lib/auth/authorization';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import SettingsForm from './SettingsForm';
 import { verifyAdminPassword } from '@/lib/auth/password';
 import { sanitizeContentHtml, sanitizeCustomHeadCode } from '@/lib/security/content';
@@ -9,7 +9,7 @@ import { getErrorMessage } from '@/lib/errors';
 export const dynamic = 'force-dynamic';
 
 function invalidateSettingsCache() {
-  revalidateTag('site-settings', 'max');
+  updateTag('site-settings');
 }
 
 export default async function AdminSettingsPage() {
@@ -46,7 +46,7 @@ export default async function AdminSettingsPage() {
         { key: 'whatsapp_number', value: whatsappNumber || phoneNumber.replace(/[^\d]/g, '') },
       ];
 
-      await Promise.all(
+      await db.$transaction(
         updates.map(({ key, value }) =>
           db.setting.upsert({
             where: { key },

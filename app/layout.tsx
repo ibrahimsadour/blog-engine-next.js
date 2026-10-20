@@ -8,6 +8,7 @@ import { Toaster } from 'sonner';
 import { sanitizeCustomHeadCode } from '@/lib/security/content';
 import { getSiteUrl } from '@/lib/site-url';
 import { getSiteSettings } from '@/lib/settings';
+import { getSiteIconUrl } from '@/lib/site-icon';
 import StickyFloatingBar from '@/components/StickyFloatingBar';
 
 export const revalidate = 300;
@@ -24,9 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const settings = await getSiteSettings();
   const { siteName, siteTitle, siteDescription, siteIcon, siteIconVersion } = settings;
-  const versionedSiteIcon = siteIcon
-    ? `${siteIcon}${siteIcon.includes('?') ? '&' : '?'}v=${siteIconVersion}`
-    : '';
+  const versionedSiteIcon = getSiteIconUrl(siteIcon, siteIconVersion);
 
   return {
     metadataBase: new URL(siteUrl),
@@ -36,13 +35,11 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     applicationName: siteName,
-    icons: versionedSiteIcon
-      ? {
-          icon: versionedSiteIcon,
-          shortcut: versionedSiteIcon,
-          apple: versionedSiteIcon,
-        }
-      : undefined,
+    icons: {
+      icon: versionedSiteIcon,
+      shortcut: versionedSiteIcon,
+      apple: versionedSiteIcon,
+    },
     authors: siteName ? [{ name: siteName }] : undefined,
     generator: 'Next.js',
     referrer: 'origin-when-cross-origin',
