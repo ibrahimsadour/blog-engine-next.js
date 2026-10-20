@@ -13,16 +13,21 @@ function isManagedImageUrl(url: string): boolean {
 
 interface ImageUploaderProps {
   initialImage?: string;
+  value?: string;
+  compact?: boolean;
   name?: string;
   onChange?: (url: string) => void;
 }
 
 export default function ImageUploader({
   initialImage = '',
+  value,
+  compact = false,
   name = 'featuredImage',
   onChange,
 }: ImageUploaderProps) {
-  const [imageUrl, setImageUrl] = useState(initialImage);
+  const [internalImageUrl, setImageUrl] = useState(initialImage);
+  const imageUrl = value ?? internalImageUrl;
   const [isUploading, setIsUploading] = useState(false);
   const [useCustomUrl, setUseCustomUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,7 +100,7 @@ export default function ImageUploader({
       <input type="hidden" name={name} value={imageUrl} />
 
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-gray-700">الصورة البارزة للمقال</label>
+        <span className="text-xs font-bold text-gray-700">{compact ? 'رفع الصورة' : 'الصورة البارزة للمقال'}</span>
         <button
           type="button"
           onClick={() => setUseCustomUrl(!useCustomUrl)}
@@ -107,13 +112,13 @@ export default function ImageUploader({
 
       {imageUrl ? (
         <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-2">
-          <div className="relative h-52 w-full rounded-lg overflow-hidden bg-gray-100">
+          <div className={`relative w-full rounded-lg overflow-hidden bg-gray-100 ${compact ? 'aspect-video' : 'h-52'}`}>
             <Image
               src={imageUrl}
               alt="معاينة الصورة"
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
+              className={compact ? 'object-contain' : 'object-cover'}
+              sizes={compact ? '(min-width: 1280px) 248px, 100vw' : '(max-width: 768px) 100vw, 50vw'}
             />
           </div>
           <div className="mt-2 flex items-center justify-between px-1">
