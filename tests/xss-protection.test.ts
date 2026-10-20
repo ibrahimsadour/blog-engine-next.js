@@ -11,13 +11,13 @@ test('rich HTML removes scripts, event handlers, and dangerous protocols', () =>
     <h2 id="safe">عنوان</h2>
     <script>alert(1)</script>
     <a href="javascript:alert(1)" onclick="alert(2)">سيئ</a>
-    <a href="https://example.com" target="_blank">آمن</a>
+    <a href="https://external.example.test" target="_blank">آمن</a>
     <img src="data:image/svg+xml,bad" onerror="alert(3)">
   `);
 
   assert.doesNotMatch(result, /script|javascript:|onclick|onerror|data:/i);
   assert.match(result, /<h2 id="safe">عنوان<\/h2>/);
-  assert.match(result, /href="https:\/\/example\.com"/);
+  assert.match(result, /href="https:\/\/external\.example\.test"/);
   assert.match(result, /rel="noopener noreferrer"/);
 });
 

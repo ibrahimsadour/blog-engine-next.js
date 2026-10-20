@@ -1,4 +1,5 @@
 import sanitizeHtmlLibrary, { type IOptions } from 'sanitize-html';
+import { contentLinkAttributes } from '../content-links';
 
 const CONTENT_OPTIONS: IOptions = {
   allowedTags: [
@@ -28,15 +29,15 @@ const CONTENT_OPTIONS: IOptions = {
   transformTags: {
     a: (_tagName, attribs) => {
       const safeAttribs = { ...attribs };
-      const rawTarget = safeAttribs.target;
+      const { target, rel } = contentLinkAttributes(attribs);
       delete safeAttribs.target;
       delete safeAttribs.rel;
-      const target = rawTarget === '_blank' ? '_blank' : undefined;
       return {
         tagName: 'a',
         attribs: {
           ...safeAttribs,
-          ...(target ? { target, rel: 'noopener noreferrer' } : {}),
+          ...(target ? { target } : {}),
+          ...(rel ? { rel } : {}),
         },
       };
     },

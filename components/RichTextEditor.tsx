@@ -2,7 +2,6 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Link } from "@tiptap/extension-link";
 import { Underline } from "@tiptap/extension-underline";
 import { Image } from "@tiptap/extension-image";
 import { TextAlign } from "@tiptap/extension-text-align";
@@ -43,6 +42,8 @@ import {
   Edit3,
 } from "lucide-react";
 import LinkSettingsModal from "@/components/editor/LinkSettingsModal";
+import { contentLinkAttributes } from "@/lib/content-links";
+import { ContentLink } from "@/lib/editor-content-link";
 
 interface RichTextEditorProps {
   content: string;
@@ -82,18 +83,15 @@ export default function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
+        link: false,
+        underline: false,
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
       }),
       Underline,
       Highlight.configure({ multicolor: true }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-blue-600 underline cursor-pointer",
-        },
-      }),
+      ContentLink,
       Image.configure({
         allowBase64: true,
         HTMLAttributes: {
@@ -167,8 +165,9 @@ export default function RichTextEditor({
   const handleOpenLinkModal = () => {
     const attrs = editor.getAttributes("link");
     setLinkUrl(attrs.href || "");
-    setLinkTarget(attrs.target === "_blank");
-    setLinkRel(attrs.rel?.includes("nofollow") ? "nofollow" : "dofollow");
+    const normalized = contentLinkAttributes(attrs);
+    setLinkTarget(normalized.target === "_blank");
+    setLinkRel(normalized.rel?.split(/\s+/).includes("nofollow") ? "nofollow" : "dofollow");
     setIsLinkModalOpen(true);
   };
 
@@ -180,8 +179,11 @@ export default function RichTextEditor({
       return;
     }
 
-    const relAttr = linkRel === "nofollow" ? "nofollow noopener noreferrer" : undefined;
-    const targetAttr = linkTarget ? "_blank" : undefined;
+    const attributes = contentLinkAttributes({
+      href: linkUrl.trim(),
+      target: linkTarget ? "_blank" : null,
+      rel: linkRel === "nofollow" ? "nofollow" : null,
+    });
 
     editor
       .chain()
@@ -189,8 +191,7 @@ export default function RichTextEditor({
       .extendMarkRange("link")
       .setLink({
         href: linkUrl.trim(),
-        target: targetAttr,
-        rel: relAttr,
+        ...attributes,
       })
       .run();
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, Link as LinkIcon } from 'lucide-react';
+import { isInternalContentLink } from '@/lib/content-links';
 
 interface LinkSettingsModalProps {
   url: string;
@@ -14,6 +15,8 @@ interface LinkSettingsModalProps {
 }
 
 export default function LinkSettingsModal(props: LinkSettingsModalProps) {
+  const internal = isInternalContentLink(props.url);
+  const selectedRel = internal ? 'dofollow' : props.rel;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="dir-rtl w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
@@ -29,16 +32,17 @@ export default function LinkSettingsModal(props: LinkSettingsModalProps) {
             <label className="mb-1 block text-xs font-semibold text-slate-700">نوع الرابط لمحركات البحث (SEO):</label>
             <div className="grid grid-cols-2 gap-2">
               {['dofollow', 'nofollow'].map((value) => (
-                <button key={value} type="button" onClick={() => props.onRelChange(value)} className={`flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-bold transition ${props.rel === value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                  {props.rel === value && <Check size={14} />}<span>{value === 'dofollow' ? 'Dofollow (ممرر للسلطة)' : 'Nofollow (غير ممرر)'}</span>
+                <button key={value} type="button" disabled={internal && value === 'nofollow'} onClick={() => props.onRelChange(value)} className={`flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-bold transition ${selectedRel === value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed'}`}>
+                  {selectedRel === value && <Check size={14} />}<span>{value === 'dofollow' ? 'رابط عادي (Follow)' : 'Nofollow'}</span>
                 </button>
               ))}
             </div>
           </div>
           <div className="flex items-center gap-2 pt-1">
-            <input type="checkbox" id="linkTargetCheckbox" checked={props.openInNewTab} onChange={(event) => props.onTargetChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+            <input type="checkbox" id="linkTargetCheckbox" disabled={internal} checked={!internal && props.openInNewTab} onChange={(event) => props.onTargetChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
             <label htmlFor="linkTargetCheckbox" className="cursor-pointer text-xs font-medium text-slate-700">فتح الرابط في تبويب جديد (<code>target=&quot;_blank&quot;</code>)</label>
           </div>
+          {internal && <p className="text-xs text-slate-500">الروابط الداخلية تفتح في الصفحة نفسها دون nofollow. يمكن اختيار nofollow يدويا للروابط الخارجية.</p>}
         </div>
         <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-3">
           <button type="button" onClick={props.onCancel} className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">إلغاء</button>
