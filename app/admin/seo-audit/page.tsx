@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getSiteSettings } from '@/lib/settings';
 import { buildSiteUrl } from '@/lib/site-url';
+import { isAutomotiveSite, isDynamicContentEnabled } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,9 @@ export default async function SeoAuditPage() {
     }}),
     db.redirect.findMany({ select: { sourcePath: true, targetPath: true } }),
     getSiteSettings(),
-    db.city.findMany({ where: { isActive: true }, select: { slug: true, name: true } }),
-    db.car.findMany({ where: { isActive: true }, select: { slug: true, name: true } }),
-    db.service.findMany({ where: { isActive: true }, select: { slug: true, name: true } }),
+    isDynamicContentEnabled() ? db.city.findMany({ where: { isActive: true }, select: { slug: true, name: true } }) : Promise.resolve([]),
+    isDynamicContentEnabled() && isAutomotiveSite() ? db.car.findMany({ where: { isActive: true }, select: { slug: true, name: true } }) : Promise.resolve([]),
+    isDynamicContentEnabled() ? db.service.findMany({ where: { isActive: true }, select: { slug: true, name: true } }) : Promise.resolve([]),
   ]);
   const findings: Finding[] = [];
   const add = (severity: Finding['severity'], url: string, issue: string) =>
