@@ -3,14 +3,20 @@ import { normalizeSlug } from '@/lib/content-input';
 const DEFAULT_SITE_URL = 'https://autogarag.net';
 
 export function getSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim() || DEFAULT_SITE_URL;
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!configured && process.env.NODE_ENV === 'production') {
+    throw new Error('NEXT_PUBLIC_SITE_URL is required in production');
+  }
+  if (!configured) return DEFAULT_SITE_URL;
   try {
     const url = new URL(configured);
     if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+      if (process.env.NODE_ENV === 'production') throw new Error('Invalid NEXT_PUBLIC_SITE_URL protocol');
       return DEFAULT_SITE_URL;
     }
     return url.origin;
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === 'production') throw error;
     return DEFAULT_SITE_URL;
   }
 }
