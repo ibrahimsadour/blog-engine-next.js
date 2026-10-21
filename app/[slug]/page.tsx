@@ -558,7 +558,8 @@ export default async function DynamicSlugPage({ params }: PageProps) {
                   src={article.featuredImage}
                   alt={article.altText || parsedTitle}
                   fill
-                  priority
+                  preload
+                  fetchPriority="high"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
                   className="object-cover"
                 />
