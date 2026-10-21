@@ -124,7 +124,9 @@ export default async function HomePage() {
                 src={settings.heroBgImage}
                 alt={settings.heroTitle}
                 fill
-                priority
+                preload
+                fetchPriority="high"
+                sizes="100vw"
                 className="object-cover"
                 style={{ objectPosition: settings.heroBgPosition }}
               />
