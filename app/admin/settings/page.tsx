@@ -171,6 +171,9 @@ export default async function AdminSettingsPage() {
         { key: 'home_meta_title', value: (formData.get('homeMetaTitle') as string)?.trim() || '' },
         { key: 'home_meta_desc', value: (formData.get('homeMetaDesc') as string)?.trim() || '' },
         { key: 'home_keywords', value: (formData.get('homeKeywords') as string)?.trim() || '' },
+        { key: 'seo_append_site_name_articles', value: formData.get('appendSiteNameToArticles') === 'true' ? 'true' : 'false' },
+        { key: 'seo_append_site_name_pages', value: formData.get('appendSiteNameToPages') === 'true' ? 'true' : 'false' },
+        { key: 'seo_append_site_name_categories', value: formData.get('appendSiteNameToCategories') === 'true' ? 'true' : 'false' },
       ];
 
       await Promise.all(
@@ -183,7 +186,7 @@ export default async function AdminSettingsPage() {
         )
       );
 
-      revalidatePath('/');
+      revalidatePath('/', 'layout');
       revalidatePath('/admin/settings');
       invalidateSettingsCache();
       return { success: true };

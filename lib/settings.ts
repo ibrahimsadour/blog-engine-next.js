@@ -58,6 +58,9 @@ export async function getSiteSettings() {
     homeMetaTitle: map['home_meta_title'] || '',
     homeMetaDesc: map['home_meta_desc'] || '',
     homeKeywords: map['home_keywords'] || '',
+    appendSiteNameToArticleTitles: map['seo_append_site_name_articles'] !== 'false',
+    appendSiteNameToPageTitles: map['seo_append_site_name_pages'] !== 'false',
+    appendSiteNameToCategoryTitles: map['seo_append_site_name_categories'] !== 'false',
 
     // التذييل والـ Head و Robots
     footerDescription:

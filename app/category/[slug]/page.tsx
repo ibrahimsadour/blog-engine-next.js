@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { serializeJsonLd } from '@/lib/security/content';
 import { buildSiteUrl } from '@/lib/site-url';
 import Pagination from '@/components/Pagination';
+import { getSiteSettings } from '@/lib/settings';
 
 export const revalidate = 3600;
 
@@ -21,6 +22,7 @@ const PAGE_SIZE = 12;
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug).trim().toLowerCase();
+  const settings = await getSiteSettings();
 
   const category = await db.category.findFirst({
     where: {
@@ -44,7 +46,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     `تصفح مقالات ودليل خدمات ${category.name} في الكويت على مدار الساعة بأفضل الأسعار.`;
 
   return {
-    title,
+    title: settings.appendSiteNameToCategoryTitles ? title : { absolute: title },
     description,
     alternates: {
       canonical: url,
@@ -66,7 +68,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       url,
       type: 'website',
       locale: 'ar_KW',
-      siteName: 'دليل الخدمات',
+      siteName: settings.siteName,
     },
     twitter: {
       card: 'summary_large_image',

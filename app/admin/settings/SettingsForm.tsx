@@ -598,6 +598,34 @@ export default function SettingsForm({
               className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-hidden"
             />
           </div>
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+            <div className="mb-3">
+              <h3 className="text-xs font-bold text-gray-800">إظهار اسم الموقع بجانب عناوين SEO</h3>
+              <p className="mt-1 text-[11px] leading-5 text-gray-500">
+                عند التعطيل يظهر عنوان الـ Meta كما أدخلته دون إضافة اسم الموقع تلقائيًا. الإعدادات مفعّلة افتراضيًا للمواقع الحالية.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                ['appendSiteNameToArticles', 'seo_append_site_name_articles', 'المقالات'],
+                ['appendSiteNameToPages', 'seo_append_site_name_pages', 'الصفحات'],
+                ['appendSiteNameToCategories', 'seo_append_site_name_categories', 'التصنيفات'],
+              ].map(([name, settingKey, label]) => (
+                <label key={name} className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 text-xs font-bold text-gray-700">
+                  <input
+                    type="checkbox"
+                    name={name}
+                    value="true"
+                    defaultChecked={initialSettings[settingKey] !== 'false'}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  عرض اسم الموقع بجانب {label}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end pt-2">

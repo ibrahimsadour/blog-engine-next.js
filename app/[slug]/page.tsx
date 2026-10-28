@@ -85,7 +85,12 @@ function injectHeadingIds(html: string): {
 
 async function getSiteConfig() {
   const settings = await getSiteSettings();
-  return { phone: settings.phoneNumber, siteName: settings.siteName };
+  return {
+    phone: settings.phoneNumber,
+    siteName: settings.siteName,
+    appendSiteNameToArticleTitles: settings.appendSiteNameToArticleTitles,
+    appendSiteNameToPageTitles: settings.appendSiteNameToPageTitles,
+  };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -93,7 +98,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const rawSlug = slug.trim();
   const decodedSlug = decodeURIComponent(rawSlug).trim();
   const siteUrl = getSiteUrl();
-  const { phone, siteName } = await getSiteConfig();
+  const {
+    phone,
+    siteName,
+    appendSiteNameToArticleTitles,
+    appendSiteNameToPageTitles,
+  } = await getSiteConfig();
   const dynamicContent = isDynamicContentEnabled();
 
   // 1. التحقق من المدن
@@ -176,7 +186,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       article.targetKeyword && article.targetKeyword.trim() ? article.targetKeyword.trim() : article.title;
 
     return {
-      title,
+      title: appendSiteNameToArticleTitles ? title : { absolute: title },
       description,
       keywords: keywordsValue,
       alternates: {
@@ -225,7 +235,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const description = page.metaDesc ? parseContentVariables(page.metaDesc, phone, siteName) : undefined;
 
     return {
-      title,
+      title: appendSiteNameToPageTitles ? title : { absolute: title },
       description,
       alternates: {
         canonical: buildSiteUrl(page.slug),
