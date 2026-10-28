@@ -10,6 +10,18 @@ import { isAutomotiveSite } from '@/lib/site-profile';
 
 export const dynamic = 'force-dynamic';
 
+function parseHomeContentVariables(
+  content: string,
+  phoneNumber: string,
+  whatsappNumber: string,
+  siteName: string,
+) {
+  return content
+    .replace(/{phone_number}|{phone}/gi, phoneNumber)
+    .replace(/{whatsapp_number}|{whatsapp}/gi, whatsappNumber)
+    .replace(/{site_name}|{siteName}/gi, siteName);
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const siteUrl = getSiteUrl();
@@ -69,6 +81,12 @@ export default async function HomePage() {
   ]);
 
   const siteUrl = getSiteUrl();
+  const parsedHomeContent = parseHomeContentVariables(
+    settings.homeCustomContent,
+    settings.phoneNumber,
+    settings.whatsappNumber,
+    settings.siteName,
+  );
 
   // 1. WebSite Schema
   const websiteSchema = {
@@ -212,12 +230,12 @@ export default async function HomePage() {
           )}
 
           {/* 2. المحتوى المخصص بالصفحة الرئيسية */}
-          {settings.homeCustomContent && (
+          {parsedHomeContent && (
             <section className="mb-14">
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs md:p-8">
                 <div
                   className="prose prose-lg max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
-                  dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(settings.homeCustomContent) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(parsedHomeContent) }}
                 />
               </div>
             </section>
